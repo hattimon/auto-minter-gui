@@ -141,16 +141,16 @@ biblioteki Qt.
 
 ## 📂 Struktura projektu
 
-  Plik                       Opis
-  -------------------------- --------------------------
-  main.py                    Punkt startowy aplikacji
-  mbc20_inscription_gui.py   Główne GUI i logika
-  auto_minter.py             Harmonogram auto‑mint
-  lobster_solver.py          Solver zagadek OpenAI
-  indexer_client.py          Klient API mbc20.xyz
-  moltbook_client.py         Klient API Moltbook
-  .env.example               Szablon konfiguracji
-  requirements.txt           Lista zależności
+| Plik | Opis |
+|------|------|
+| `main.py` | Punkt startowy aplikacji |
+| `mbc20_inscription_gui.py` | Główne GUI i logika |
+| `auto_minter.py` | Harmonogram auto-mint |
+| `lobster_solver.py` | Solver zagadek OpenAI |
+| `indexer_client.py` | Klient API mbc20.xyz |
+| `moltbook_client.py` | Klient API Moltbook |
+| `.env.example` | Szablon konfiguracji |
+| `requirements.txt` | Lista zależności |
 
 ------------------------------------------------------------------------
 
