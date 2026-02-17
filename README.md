@@ -84,7 +84,7 @@ https://platform.openai.com/api-keys
 
 ``` powershell
 python -m venv .venv
-.  .venv  Scripts  activate
+.\.venv\Scripts\activate
 pip install -r requirements.txt
 python main.py
 ```
