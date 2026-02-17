@@ -3,7 +3,7 @@
 [🇬🇧 English](README.md) • [🇵🇱 Polski](README_PL.md)
 
 A user-friendly desktop application for creating and auto-minting
-**MBC-20** inscriptions on Moltbook,\
+**MBC-20** inscriptions on Moltbook,  
 with integrated AI puzzle solving and mbc20.xyz indexer support.
 
 ------------------------------------------------------------------------
@@ -11,14 +11,14 @@ with integrated AI puzzle solving and mbc20.xyz indexer support.
 ## ✨ Features
 
 -   🖥️ **Modern PyQt6 GUI** -- Tabs: Main, History, .env Editor, Auto
-    Mint\
+    Mint  
 -   🧠 **AI Brain Integration** -- Automatically solves Moltbook lobster
-    puzzles using OpenAI\
+    puzzles using OpenAI  
 -   🔄 **Auto-Mint Scheduler** -- Configurable intervals, smart backoff,
-    max runs control\
+    max runs control  
 -   📜 **History Log Viewer** -- Track posts and bulk re-index via
-    mbc20.xyz API\
--   🌍 **Language Switcher** -- English / Polish interface\
+    mbc20.xyz API  
+-   🌍 **Language Switcher** -- English / Polish interface  
 -   🔐 **Built-in .env Editor** -- Manage API keys directly inside the
     app
 
@@ -32,8 +32,8 @@ with integrated AI puzzle solving and mbc20.xyz indexer support.
 
 ### Python dependencies:
 
--   requests\
--   python-dotenv\
+-   requests  
+-   python-dotenv  
 -   PyQt6
 
 Install them via:
@@ -69,11 +69,11 @@ OPENAI_API_KEY=your_openai_key_here
 OPENAI_MODEL=gpt-4.1
 ```
 
--   `MOLTBOOK_API_KEY` -- Required for Moltbook posting & verification\
--   `OPENAI_API_KEY` -- Used for lobster puzzle solving\
+-   `MOLTBOOK_API_KEY` -- Required for Moltbook posting & verification  
+-   `OPENAI_API_KEY` -- Used for lobster puzzle solving  
 -   `OPENAI_MODEL` -- Defaults to gpt-4.1-mini if not specified
 
-Create OpenAI key:\
+Create OpenAI key:  
 https://platform.openai.com/api-keys
 
 ------------------------------------------------------------------------
@@ -84,7 +84,7 @@ https://platform.openai.com/api-keys
 
 ``` powershell
 python -m venv .venv
-.\.venv\Scripts\activate
+.  .venv  Scripts  activate
 pip install -r requirements.txt
 python main.py
 ```
@@ -111,32 +111,32 @@ required.
 
 ### 📝 Main Tab
 
--   Create deploy / mint / transfer / link operations\
--   Randomize title\
--   Save and load token profiles\
+-   Create deploy / mint / transfer / link operations  
+-   Randomize title  
+-   Save and load token profiles  
 -   Auto-verify posts with AI puzzle solver
 
 ### 🤖 AI Brain
 
--   Test OpenAI integration\
+-   Test OpenAI integration  
 -   View expected vs actual lobster puzzle answers
 
 ### 📚 History
 
--   View `mbc20_history.log`\
--   Bulk re-index posts\
+-   View `mbc20_history.log`  
+-   Bulk re-index posts  
 -   Skip indexed or errored entries
 
 ### ⚙️ .env Editor
 
--   Reload and edit environment configuration\
+-   Reload and edit environment configuration  
 -   Instantly update API keys
 
 ### 🔁 Auto Mint
 
--   Configure minting intervals\
--   Smart exponential backoff on errors\
--   Infinite or limited run modes\
+-   Configure minting intervals  
+-   Smart exponential backoff on errors  
+-   Infinite or limited run modes  
 -   Background worker thread execution
 
 ------------------------------------------------------------------------
@@ -158,10 +158,10 @@ required.
 
 ## 🤝 Contributing
 
-1.  Fork the repository\
-2.  Create feature branch\
-3.  Commit changes\
-4.  Push branch\
+1.  Fork the repository  
+2.  Create feature branch  
+3.  Commit changes  
+4.  Push branch  
 5.  Open Pull Request
 
 Ideas, improvements and feature suggestions are welcome!
