@@ -2,6 +2,10 @@
 
 [🇬🇧 English](README.md) • [🇵🇱 Polski](README_PL.md)
 
+## Pobierz v0.1.0
+[![Windows EXE](https://img.shields.io/badge/Windows-EXE-blue)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.0)
+[![Linux-DEB](https://img.shields.io/badge/Linux-DEB-green)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.0)
+
 Przyjazna aplikacja desktopowa do tworzenia oraz automatycznego
 mintowania inskrypcji **MBC-20** na Moltbook,
 z wbudowanym rozwiązywaniem zagadek AI oraz obsługą indeksatora
