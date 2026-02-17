@@ -3,7 +3,7 @@
 [🇬🇧 English](README.md) • [🇵🇱 Polski](README_PL.md)
 
 Przyjazna aplikacja desktopowa do tworzenia oraz automatycznego
-mintowania inskrypcji **MBC-20** na Moltbook,\
+mintowania inskrypcji **MBC-20** na Moltbook,
 z wbudowanym rozwiązywaniem zagadek AI oraz obsługą indeksatora
 **mbc20.xyz**.
 
@@ -12,14 +12,14 @@ z wbudowanym rozwiązywaniem zagadek AI oraz obsługą indeksatora
 ## ✨ Funkcje
 
 -   🖥️ **Nowoczesne GUI PyQt6** -- zakładki: Main, History, Edytor .env,
-    Auto Mint\
+    Auto Mint
 -   🧠 **Integracja AI** -- automatyczne rozwiązywanie zagadek „lobster"
-    Moltbooka (OpenAI)\
+    Moltbooka (OpenAI)
 -   🔄 **Auto‑Mint Scheduler** -- konfigurowalne interwały, inteligentny
-    backoff, limit uruchomień\
+    backoff, limit uruchomień
 -   📜 **Historia i logi** -- podgląd postów oraz masowe ponowne
-    indeksowanie przez API mbc20.xyz\
--   🌍 **Zmiana języka** -- interfejs EN / PL\
+    indeksowanie przez API mbc20.xyz
+-   🌍 **Zmiana języka** -- interfejs EN / PL
 -   🔐 **Wbudowany edytor .env** -- zarządzanie kluczami API
     bezpośrednio w aplikacji
 
@@ -33,8 +33,8 @@ z wbudowanym rozwiązywaniem zagadek AI oraz obsługą indeksatora
 
 ### Zależności Pythona:
 
--   requests\
--   python-dotenv\
+-   requests
+-   python-dotenv
 -   PyQt6
 
 Instalacja:
@@ -68,11 +68,11 @@ OPENAI_API_KEY=twoj_klucz_openai
 OPENAI_MODEL=gpt-4.1
 ```
 
--   `MOLTBOOK_API_KEY` -- wymagany do publikacji i weryfikacji postów\
--   `OPENAI_API_KEY` -- używany do rozwiązywania zagadek AI\
+-   `MOLTBOOK_API_KEY` -- wymagany do publikacji i weryfikacji postów
+-   `OPENAI_API_KEY` -- używany do rozwiązywania zagadek AI
 -   `OPENAI_MODEL` -- domyślnie `gpt-4.1-mini`
 
-Klucz OpenAI utworzysz tutaj:\
+Klucz OpenAI utworzysz tutaj:
 https://platform.openai.com/api-keys
 
 ------------------------------------------------------------------------
@@ -110,31 +110,31 @@ biblioteki Qt.
 
 ### 📝 Main
 
--   Tworzenie operacji: deploy / mint / transfer / link\
--   Losowanie tytułu\
--   Profile tokenów\
+-   Tworzenie operacji: deploy / mint / transfer / link
+-   Losowanie tytułu
+-   Profile tokenów
 -   Automatyczna weryfikacja postów (AI)
 
 ### 🤖 AI Brain
 
--   Test połączenia z OpenAI\
+-   Test połączenia z OpenAI
 -   Podgląd odpowiedzi AI do zagadek
 
 ### 📚 History
 
--   Podgląd `mbc20_history.log`\
--   Masowe indeksowanie\
+-   Podgląd `mbc20_history.log`
+-   Masowe indeksowanie
 -   Pomijanie błędów i wpisów już zindeksowanych
 
 ### ⚙️ Edytor .env
 
--   Wczytywanie i zapis konfiguracji\
+-   Wczytywanie i zapis konfiguracji
 -   Natychmiastowa aktualizacja kluczy API
 
 ### 🔁 Auto Mint
 
--   Automatyczne mintowanie w tle\
--   Dynamiczny backoff przy błędach\
+-   Automatyczne mintowanie w tle
+-   Dynamiczny backoff przy błędach
 -   Tryb nieskończony lub limitowany
 
 ------------------------------------------------------------------------
@@ -156,10 +156,10 @@ biblioteki Qt.
 
 ## 🤝 Współpraca
 
-1.  Fork repozytorium\
-2.  Utwórz branch funkcjonalny\
-3.  Zatwierdź zmiany\
-4.  Wypchnij branch\
+1.  Fork repozytorium
+2.  Utwórz branch funkcjonalny
+3.  Zatwierdź zmiany
+4.  Wypchnij branch
 5.  Otwórz Pull Request
 
 Pomysły, sugestie i nowe funkcje są mile widziane 🚀
