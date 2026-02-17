@@ -143,6 +143,25 @@ biblioteki Qt.
 
 ------------------------------------------------------------------------
 
+## Zrzuty ekranu
+
+### Główne okno  
+![Główne okno](docs/screenshots/main-window.png)  
+
+![Główne okno – menu](docs/screenshots/main-window-menu.png)  
+
+### Zakładka Auto Mint  
+![Zakładka Auto Mint](docs/screenshots/auto-mint.png)  
+
+### Historia i indeksowanie  
+![Zakładka Historia](docs/screenshots/history-tab.png)  
+
+### Edytor .env  
+![Edytor .env](docs/screenshots/env-editor.png)  
+
+------------------------------------------------------------------------
+
+
 ## 📂 Struktura projektu
 
 | Plik | Opis |
