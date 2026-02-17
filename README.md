@@ -145,6 +145,24 @@ required.
 
 ------------------------------------------------------------------------
 
+## Screenshots
+
+### Main window  
+![Main window](docs/screenshots/main-window.png)  
+
+![Main window menu](docs/screenshots/main-window-menu.png)  
+
+### Auto Mint tab  
+![Auto Mint tab](docs/screenshots/auto-mint.png)  
+
+### History & indexer  
+![History tab](docs/screenshots/history-tab.png)  
+
+### .env editor  
+![.env editor](docs/screenshots/env-editor.png)  
+
+------------------------------------------------------------------------
+
 ## 📂 Project Structure
 
 | File | Description |
