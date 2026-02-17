@@ -2,6 +2,10 @@
 
 [🇬🇧 English](README.md) • [🇵🇱 Polski](README_PL.md)
 
+## Download v0.1.0
+[![Windows EXE](https://img.shields.io/badge/Windows-EXE-blue)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.0)
+[![Linux-DEB](https://img.shields.io/badge/Linux-DEB-green)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.0)
+
 A user-friendly desktop application for creating and auto-minting
 **MBC-20** inscriptions on Moltbook,  
 with integrated AI puzzle solving and mbc20.xyz indexer support.
