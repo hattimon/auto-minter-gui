@@ -143,16 +143,16 @@ required.
 
 ## 📂 Project Structure
 
-  File                       Description
-  -------------------------- -------------------------
-  main.py                    Application entry point
-  mbc20_inscription_gui.py   Main GUI and logic
-  auto_minter.py             Auto-mint scheduler
-  lobster_solver.py          OpenAI puzzle solver
-  indexer_client.py          mbc20.xyz API client
-  moltbook_client.py         Moltbook API wrapper
-  .env.example               Environment template
-  requirements.txt           Dependencies list
+| File | Description |
+|------|------------|
+| `main.py` | Application entry point |
+| `mbc20_inscription_gui.py` | Main GUI and logic |
+| `auto_minter.py` | Auto-mint scheduler |
+| `lobster_solver.py` | OpenAI puzzle solver |
+| `indexer_client.py` | mbc20.xyz API client |
+| `moltbook_client.py` | Moltbook API wrapper |
+| `.env.example` | Environment template |
+| `requirements.txt` | Dependencies list |
 
 ------------------------------------------------------------------------
 
