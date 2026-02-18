@@ -7,6 +7,7 @@ import string
 import time
 
 from lobster_solver import solve_lobster_challenge
+from typing import Optional
 
 from datetime import datetime
 import indexer_client
@@ -45,7 +46,7 @@ load_dotenv()
 
 MOLTBOOK_API_KEY = os.getenv("MOLTBOOK_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "o4-mini")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
 
 
 def reload_env():
@@ -55,7 +56,7 @@ def reload_env():
     load_dotenv(override=True)
     MOLTBOOK_API_KEY = os.getenv("MOLTBOOK_API_KEY")
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-    OPENAI_MODEL = os.getenv("OPENAI_MODEL", "o4-mini")
+    OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
 
     try:
         moltbook_client.set_api_key(MOLTBOOK_API_KEY)
@@ -145,6 +146,8 @@ LANG_STRINGS = {
             "Max runs: {maxruns}.",
         "auto_desc_agent_unnamed": "Agent (no name)",
         "auto_desc_max_infinite": "infinite",
+        "use_enhanced_solver": "Use enhanced lobster solver",
+        "use_only_llm": "Use only LLM (skip rules/cache)",
     },
     "pl": {
         "window_title": "Moltbook MBC-20 GUI Inskrypcje",
@@ -227,6 +230,8 @@ LANG_STRINGS = {
             "Maks. runów: {maxruns}.",
         "auto_desc_agent_unnamed": "Agent (bez nazwy)",
         "auto_desc_max_infinite": "bez limitu",
+        "use_enhanced_solver": "Użyj ulepszonego solvera zagadek",
+        "use_only_llm": "Używaj tylko LLM (pomiń reguły/cache)",
     },
 }
 
@@ -246,13 +251,13 @@ class AutoMintWorker(QObject):
 
     def should_stop(self) -> bool:
         return self._stop
-
+    
     def run(self):
         def logfn(msg: str):
-            # centralne logowanie z dopiskiem AUTO-MINT
             self.log_signal.emit(f"[AUTO-MINT] {msg}")
 
         logfn("Worker run() started.")
+
         minter = AutoMinter(
             solve_fn=self.gui.solve_challenge_with_openai,
             verify_fn=self.gui.send_verification,
@@ -266,9 +271,12 @@ class AutoMintWorker(QObject):
             minter.run_loop()
             logfn("run_loop() finished.")
         except Exception as e:
+            import traceback
             logfn(f"EXCEPTION in AutoMintWorker.run: {e!r}")
+            logfn(traceback.format_exc())
         finally:
             self.finished.emit()
+
 
 
 class Mbc20InscriptionGUI(QWidget):
@@ -316,7 +324,7 @@ class Mbc20InscriptionGUI(QWidget):
         self.load_history_to_widget()
         self.load_env_to_widget()
         self.update_auto_description()
-
+        
     # ---------- UI ----------
 
     def init_ui(self):
@@ -422,6 +430,16 @@ class Mbc20InscriptionGUI(QWidget):
         form.addRow(self.addr_label, self.addr_edit)
         form.addRow(self.postdesc_label, self.description_edit)
         form.addRow(profile_layout)
+
+        # checkbox: enhanced solver
+        self.use_enhanced_lobster_solver = QCheckBox(self.tr["use_enhanced_solver"])
+        self.use_enhanced_lobster_solver.setChecked(True)
+        main_tab_layout.addWidget(self.use_enhanced_lobster_solver)
+
+        # NOWE: checkbox "Use only LLM"
+        self.use_only_llm_checkbox = QCheckBox(self.tr["use_only_llm"])
+        self.use_only_llm_checkbox.setChecked(False)
+        main_tab_layout.addWidget(self.use_only_llm_checkbox)
 
         button_layout = QHBoxLayout()
         self.post_button = QPushButton(self.tr["create_btn"])
@@ -584,7 +602,7 @@ class Mbc20InscriptionGUI(QWidget):
         auto_layout.addRow(self.auto_desc_label)
 
         self.update_fields_visibility(self.op_combo.currentText())
-
+        
     # ---------- language ----------
 
     def on_language_changed(self, index: int):
@@ -638,7 +656,14 @@ class Mbc20InscriptionGUI(QWidget):
             self.tr["ph_auto_profile_name"]
         )
 
+        # NOWE: teksty checkboxów solvera
+        if hasattr(self, "use_enhanced_lobster_solver"):
+            self.use_enhanced_lobster_solver.setText(self.tr["use_enhanced_solver"])
+        if hasattr(self, "use_only_llm_checkbox"):
+            self.use_only_llm_checkbox.setText(self.tr["use_only_llm"])
+
         self.update_auto_description()
+
     # ---------- helpers / logging ----------
 
     def getenv(self, key: str, required: bool = True, default=None):
@@ -720,18 +745,43 @@ class Mbc20InscriptionGUI(QWidget):
                       or "MBC-20 inscription")
         suffix = self.generate_random_suffix(10)
         self.title_edit.setText(f"{base_title} [{suffix}]")
+
     # ---------- OpenAI solve + verify (delegacja do lobster_solver.py) ----------
 
-    def solve_challenge_with_openai(self, challenge: str) -> str:
+    def solve_challenge_with_openai(
+        self,
+        challenge: str,
+        verification_code: Optional[str] = None,
+    ) -> str:
         """
-        Używa zewnętrznego modułu lobster_solver do rozwiązania zagadki.
-        log_fn loguje tylko do pliku (bez wywołań Qt z wątku workera).
+        Rozwiązuje zagadkę przez lobster_solver z trybem enhanced/LLM i auto‑retry.
+        log_fn loguje tylko do pliku (bez Qt z wątku workera).
         """
+        # domyślnie: enhanced (reguły + cache)
+        force_llm = False
+
+        # jeśli jest checkbox "use only LLM" i zaznaczony → wymuś czysty LLM
+        if hasattr(self, "use_only_llm_checkbox") and self.use_only_llm_checkbox.isChecked():
+            force_llm = True
+        elif hasattr(self, "use_enhanced_lobster_solver"):
+            # jeśli odznaczysz enhanced, przełącz na classic LLM
+            force_llm = not self.use_enhanced_lobster_solver.isChecked()
+
+        # tylko log do pliku – żadnego self.log (Qt)
         def log_fn(msg: str) -> None:
             self.log_to_file_only(msg)
 
-        answer = solve_lobster_challenge(challenge, log_fn=log_fn)
+        answer = solve_lobster_challenge(
+            challenge=challenge,
+            log_fn=log_fn,
+            force_llm=force_llm,
+            retry_on_fail=True,
+            verify_fn=self.send_verification,
+            verification_code=verification_code,
+        )
         return answer
+
+
 
     def send_verification(self, verification_code: str, answer: str):
         api_key = self.getenv("MOLTBOOK_API_KEY")
@@ -768,7 +818,6 @@ class Mbc20InscriptionGUI(QWidget):
         )
 
         return success, f"Status {r.status_code} {text}"
-
 
     # ---------- AI test ----------
 
@@ -1283,7 +1332,7 @@ class Mbc20InscriptionGUI(QWidget):
                 f"Post response: {json.dumps(resp, indent=2, ensure_ascii=False)}"
             )
 
-            # --- NOWY SPOSÓB POBIERANIA POST + VERIFICATION ---
+            # --- pobranie POST + VERIFICATION ---
 
             post_obj = resp.get("post") or {}
             post_id = post_obj.get("id")
@@ -1321,8 +1370,12 @@ class Mbc20InscriptionGUI(QWidget):
                 f"Challenge:\n{challenge_text}"
             )
 
-            answer = self.solve_challenge_with_openai(challenge_text)
-            self.log(f"LLM answer: {answer}")
+            # tutaj: solver z verification_code → w środku zrobi auto‑retry
+            answer = self.solve_challenge_with_openai(
+                challenge_text,
+                verification_code=verification_code,
+            )
+            self.log(f"LLM answer (po ewentualnym retry): {answer}")
 
             ok, verify_log = self.send_verification(verification_code, answer)
             self.log(f"Verify result: {verify_log}")
