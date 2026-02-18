@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import json
 import time
 from dataclasses import dataclass
@@ -36,10 +37,10 @@ class AutoMinter:
         get_description_fn=None,
     ):
         """
-        solve_fn(challenge:str) -> str       – czysta funkcja rozwiązująca zagadkę
-        verify_fn(code:str, answer:str) -> (ok:bool, log:str)
-        build_title_fn() -> str             – generuje tytuł
-        get_description_fn() -> str         – zwraca opis posta
+        solve_fn(challenge:str) -> str         – czysta funkcja rozwiązująca zagadkę
+        verify_fn(verification_code:str, answer:str) -> (ok:bool, log:str)
+        build_title_fn() -> str               – generuje tytuł
+        get_description_fn() -> str           – zwraca opis posta
         """
         self.solve_fn = solve_fn
         self.verify_fn = verify_fn
@@ -116,6 +117,8 @@ class AutoMinter:
             + json.dumps(resp, indent=2, ensure_ascii=False)
         )
 
+        # --- NOWY FORMAT VERIFICATION (jak w GUI) ---
+
         post_obj = resp.get("post") or {}
         post_id = post_obj.get("id")
         if not post_id:
@@ -124,12 +127,12 @@ class AutoMinter:
         post_url = moltbook_client.get_post_url(post_id)
         self.log(f"[AUTO-MINT] Post URL: {post_url}")
 
-        verification = resp.get("verification") or {}
-        verification_required = (
-            resp.get("verification_required") or verification.get("required")
-        )
+        verification = post_obj.get("verification") or {}
+        verification_code = verification.get("verification_code")
+        challenge_text = verification.get("challenge_text")
+        expires_at = verification.get("expires_at")
 
-        if not verification or not verification_required:
+        if not verification_code or not challenge_text:
             self.log("[AUTO-MINT] No verification required.")
 
             # brak weryfikacji – od razu indeksujemy po krótkim wait
@@ -150,22 +153,15 @@ class AutoMinter:
 
             return
 
-        challenge = verification.get("challenge", "")
-        code = verification.get("code")
-        expires_at = verification.get("expires_at")
-
         self.log(
-            f"[AUTO-MINT] Verification required. Code={code} "
-            f"Expires={expires_at}\nChallenge:\n{challenge}"
+            f"[AUTO-MINT] Verification required. Code={verification_code} "
+            f"Expires={expires_at}\nChallenge:\n{challenge_text}"
         )
 
-        if not code or not challenge:
-            raise RuntimeError("Missing verification code or challenge")
-
-        answer = self.solve_fn(challenge)
+        answer = self.solve_fn(challenge_text)
         self.log(f"[AUTO-MINT] LLM answer: {answer}")
 
-        ok, verify_log = self.verify_fn(code, answer)
+        ok, verify_log = self.verify_fn(verification_code, answer)
         self.log("[AUTO-MINT] Verify response:\n" + verify_log)
 
         if not ok:
