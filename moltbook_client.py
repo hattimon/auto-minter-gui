@@ -27,6 +27,7 @@ def _headers():
         "Content-Type": "application/json",
     }
 
+
 # ---------- POSTY ----------
 
 
@@ -34,12 +35,19 @@ def post_to_moltbook(submolt: str, title: str, content: str, log_fn=None):
     """
     Utwórz post w danym submolcie.
     log_fn – opcjonalna funkcja logująca (np. gui.log).
+
+    Zgodnie z aktualnym API Moltbook używamy klucza `submolt_name`
+    zamiast `submolt` w JSON body.
     """
     url = f"{MOLTBOOK_API_BASE}/posts"
-    data = {"submolt": submolt, "title": title, "content": content}
+    data = {
+        "submolt_name": submolt,
+        "title": title,
+        "content": content,
+    }
 
     if log_fn:
-        log_fn(f"[moltbook_client] POST {url} submolt={submolt} title={title}")
+        log_fn(f"[moltbook_client] POST {url} submolt_name={submolt} title={title}")
 
     resp = requests.post(url, headers=_headers(), json=data, timeout=30)
 
