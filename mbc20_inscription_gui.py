@@ -720,8 +720,7 @@ class Mbc20InscriptionGUI(QWidget):
                       or "MBC-20 inscription")
         suffix = self.generate_random_suffix(10)
         self.title_edit.setText(f"{base_title} [{suffix}]")
-
-    # ---------- OpenAI solve + retry (delegacja do lobster_solver.py) ----------
+    # ---------- OpenAI solve + verify (delegacja do lobster_solver.py) ----------
 
     def solve_challenge_with_openai(self, challenge: str) -> str:
         """
@@ -737,22 +736,39 @@ class Mbc20InscriptionGUI(QWidget):
     def send_verification(self, verification_code: str, answer: str):
         api_key = self.getenv("MOLTBOOK_API_KEY")
         url = f"{MOLTBOOK_BASE_URL}/api/v1/verify"
-        payload = {"verification_code": verification_code, "answer": answer}
+
+        payload = {
+            "verification_code": verification_code,
+            "answer": answer,
+        }
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         }
 
         self.log_to_file_only(
-            f"[DEBUG] Sending verification code={verification_code} answer={answer}"
+            f"DEBUG Sending verification code={verification_code} answer={answer}"
         )
+
         r = requests.post(url, json=payload, headers=headers, timeout=15)
         text = r.text
-        success = 200 <= r.status_code < 300
+
+        ok_http = 200 <= r.status_code < 300
+        ok_logic = False
+        try:
+            data = r.json()
+            ok_logic = bool(data.get("success"))
+        except Exception:
+            pass
+
+        success = ok_http and ok_logic
+
         self.log_to_file_only(
-            f"Verify response: Status: {r.status_code}, Body: {text}"
+            f"Verify response: Status {r.status_code}, Body: {text}"
         )
+
         return success, f"Status {r.status_code} {text}"
+
 
     # ---------- AI test ----------
 
@@ -1256,6 +1272,7 @@ class Mbc20InscriptionGUI(QWidget):
                 f"Creating post in submolt '{submolt}' with title '{title}' "
                 f"and inscription: {inscription_json}"
             )
+
             resp = moltbook_client.post_to_moltbook(
                 submolt=submolt,
                 title=title,
@@ -1265,6 +1282,8 @@ class Mbc20InscriptionGUI(QWidget):
             self.log(
                 f"Post response: {json.dumps(resp, indent=2, ensure_ascii=False)}"
             )
+
+            # --- NOWY SPOSÓB POBIERANIA POST + VERIFICATION ---
 
             post_obj = resp.get("post") or {}
             post_id = post_obj.get("id")
@@ -1279,12 +1298,12 @@ class Mbc20InscriptionGUI(QWidget):
             post_url = moltbook_client.get_post_url(post_id)
             QGuiApplication.clipboard().setText(post_url)
 
-            verification = resp.get("verification") or {}
-            verification_required = (
-                resp.get("verification_required") or verification.get("required")
-            )
+            verification = post_obj.get("verification") or {}
+            verification_code = verification.get("verification_code")
+            challenge_text = verification.get("challenge_text")
+            expires_at = verification.get("expires_at")
 
-            if not verification or not verification_required:
+            if not verification_code or not challenge_text:
                 QMessageBox.information(
                     self,
                     self.tr["post_created_no_ver"],
@@ -1295,26 +1314,17 @@ class Mbc20InscriptionGUI(QWidget):
                 )
                 return
 
-            challenge = verification.get("challenge")
-            code = verification.get("code")
-            expires_at = verification.get("expires_at")
             self.log(
-                f"Verification required.\nCode: {code}\nExpires at: {expires_at}\n"
-                f"Challenge:\n{challenge}"
+                "Verification required.\n"
+                f"Code: {verification_code}\n"
+                f"Expires at: {expires_at}\n"
+                f"Challenge:\n{challenge_text}"
             )
 
-            if not code or not challenge:
-                QMessageBox.warning(
-                    self,
-                    self.tr["post_ver_failed"],
-                    self.tr["ver_error_missing"],
-                )
-                return
-
-            answer = self.solve_challenge_with_openai(challenge)
+            answer = self.solve_challenge_with_openai(challenge_text)
             self.log(f"LLM answer: {answer}")
 
-            ok, verify_log = self.send_verification(code, answer)
+            ok, verify_log = self.send_verification(verification_code, answer)
             self.log(f"Verify result: {verify_log}")
 
             if ok:
@@ -1361,6 +1371,7 @@ class Mbc20InscriptionGUI(QWidget):
         except Exception as e:
             QMessageBox.critical(self, self.tr["error"], str(e))
             self.log(f"Error: {e!r}")
+
 
 def main():
     app = QApplication(sys.argv)
