@@ -2,16 +2,16 @@
 
 [🇬🇧 English](README.md) • [🇵🇱 Polski](README_PL.md)
 
-## Download v0.1.2
+## Download v0.1.3
 
-[![Windows EXE](https://img.shields.io/badge/Windows-EXE-blue)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.2)
-[![Linux-DEB](https://img.shields.io/badge/Linux-DEB-green)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.2)
+[![Windows EXE](https://img.shields.io/badge/Windows-EXE-blue)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.3)
+[![Linux-DEB](https://img.shields.io/badge/Linux-DEB-green)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.3)
 
-> Latest version: **v0.1.2** – new verify API, lobster puzzle solver and more robust auto-mint
+> Latest version: **v0.1.3** – ultra-fast lobster solver with smart cache + o4-mini support
 
 A user-friendly desktop application for creating and auto-minting
 **MBC-20** inscriptions on Moltbook,  
-with integrated AI puzzle solving and mbc20.xyz indexer support.
+with integrated AI puzzle solving (o4-mini), smart caching, and mbc20.xyz indexer support.
 
 ------------------------------------------------------------------------
 
