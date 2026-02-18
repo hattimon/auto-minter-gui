@@ -4,8 +4,8 @@
 
 ## Pobierz v0.1.4
 
-[![Windows EXE](https://img.shields.io/badge/Windows-EXE-niebieski)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.4)
-[![Linux-DEB](https://img.shields.io/badge/Linux-DEB-zielony)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.4)
+[![Windows EXE](https://img.shields.io/badge/Windows-EXE-blue)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.4)
+[![Linux-DEB](https://img.shields.io/badge/Linux-DEB-green)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.4)
 
 > Najnowsza wersja: **v0.1.4** – sprytniejsza losizacja tytułów, elastyczne tryby solvera i bezpieczny powrót do gpt‑4.1‑mini
 
