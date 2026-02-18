@@ -15,7 +15,7 @@ MOLTBOOK_PUZZLE_SYSTEM_PROMPT = (
     "  (A) a base value and a change (increase or decrease), OR\n"
     "  (B) two forces/amounts and ask for NET or TOTAL force.\n"
     "- Words like 'exerts', 'has', 'walks at', 'swims at' give base values.\n"
-    "- Words like 'adds', 'gains', 'increases by', 'speeds up by', 'picks up' mean you ADD.\n"
+    "- Words like 'adds', 'gains', 'increases by', 'speeds up by', 'picks up', 'accelerates by' mean you ADD.\n"
     "- Words like 'loses', 'reduces by', 'slows down by' mean you SUBTRACT.\n"
     "- If it asks for NET or TOTAL force between two opposing forces, "
     "subtract the smaller from the larger.\n"
@@ -25,7 +25,8 @@ MOLTBOOK_PUZZLE_SYSTEM_PROMPT = (
 )
 
 
-# --- prosta mapa słów liczbowych, pod lobsterowe zagadki ---
+# --- Mapa słów liczbowych dla prostych przypadków ---
+# Parser obsługuje tylko czytelne warianty, resztę robi LLM
 
 _NUMBER_WORDS = {
     "zero": 0,
@@ -78,12 +79,26 @@ _NUMBER_WORDS = {
 def _clean_text(challenge: str) -> str:
     """
     Usuwa wszystkie znaki poza literami, cyframi i spacjami,
-    normalizuje do małych liter.
+    normalizuje do małych liter, usuwa duplikaty liter.
+    Parser jest uproszczony - działa dla czytelnych przypadków.
     """
+    # usuń myślniki między literami (thirty-five → thirtyfive)
+    cleaned = re.sub(r"([a-zA-Z])\s*-\s*([a-zA-Z])", r"\1\2", challenge)
     # zamień wszystko co nie jest literą/cyfrą/spacją na spację
-    cleaned = re.sub(r"[^0-9A-Za-z\s]", " ", challenge)
-    cleaned = cleaned.lower()
-    # sklej wielowyrazowe liczby typu "twenty five" -> "twentyfive"
+    cleaned = re.sub(r"[^0-9A-Za-z\s]", " ", cleaned)
+    # usuń wielokrotne spacje
+    cleaned = re.sub(r"\s+", " ", cleaned)
+    cleaned = cleaned.lower().strip()
+    
+    # usuń duplikaty liter w tokenach (seevveen → seven, obbster → obster)
+    tokens = cleaned.split()
+    deduped = []
+    for token in tokens:
+        deduped_token = re.sub(r"([a-z])\1+", r"\1", token)
+        deduped.append(deduped_token)
+    cleaned = " ".join(deduped)
+    
+    # sklej wielowyrazowe liczby typu "thirty five" -> "thirtyfive"
     tokens = cleaned.split()
     merged = []
     skip_next = False
@@ -126,12 +141,14 @@ def _extract_numbers(cleaned: str) -> list[int]:
 
 def _rule_based_solver(challenge: str, log_fn=None) -> float | None:
     """
-    Prosta deterministyczna logika:
+    Prosta deterministyczna logika dla prostych przypadków:
     - czyści tekst,
     - wyciąga liczby,
-    - jeśli dokładnie 2 dodatnie: zwraca ich sumę,
+    - jeśli dokładnie 2: zwraca ich sumę,
     - jeśli 1 liczba: zwraca ją,
     - inaczej None (niech zrobi to LLM).
+    
+    Parser celowo jest uproszczony - złożone przypadki idą do LLM.
     """
     cleaned = _clean_text(challenge)
     if log_fn:
@@ -144,30 +161,25 @@ def _rule_based_solver(challenge: str, log_fn=None) -> float | None:
     if not nums:
         return None
 
-    # jedna liczba → po prostu ją zwracamy
+    # jedna liczba → zwracamy ją
     if len(nums) == 1:
         return float(nums[0])
 
-    # typowy lobster puzzle: dwie siły i pytanie o total
-    # jeśli są dokładnie 2 liczby, traktujemy to jako sumę
+    # dwie liczby → sumujemy (typowe zadanie: total force, new velocity)
     if len(nums) == 2:
-        n1, n2 = nums[0], nums[1]
-        total_keywords = ("total", "combined", "together", "force", "sum")
-        if any(kw in cleaned for kw in total_keywords):
-            return float(n1 + n2)
-        return float(n1 + n2)
+        return float(nums[0] + nums[1])
 
-    # więcej liczb – sytuacja bardziej złożona, oddajemy LLM-owi
+    # więcej liczb lub 0 liczb – oddajemy LLM-owi
     return None
 
 
 def call_openai_solver(challenge: str, log_fn=None) -> str:
-    """Wywołanie OpenAI z dopasowanym promptem, bez logiki GUI."""
+    """Wywołanie OpenAI z dopasowanym promptem."""
     openai_key = os.getenv("OPENAI_API_KEY")
     if not openai_key:
         raise RuntimeError("Missing OPENAI_API_KEY in environment")
 
-    model = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
+    model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
     user_prompt = (
         MOLTBOOK_PUZZLE_SYSTEM_PROMPT
@@ -223,14 +235,22 @@ def call_openai_solver(challenge: str, log_fn=None) -> str:
     raise RuntimeError("OpenAI retries exhausted")
 
 
-def solve_lobster_challenge(challenge: str, log_fn=None) -> str:
+def solve_lobster_challenge(challenge: str, log_fn=None, retry_on_fail=False, verify_fn=None, verification_code=None) -> str:
     """
     Wersja do użycia z GUI/auto-mint:
-    1) próbuje deterministycznie policzyć wynik z tekstu (parser),
-    2) jeśli się nie da – woła OpenAI,
-    3) wynik zawsze zwraca w formacie 'NN.NN'.
+    1) próbuje deterministycznie policzyć wynik z tekstu (parser dla prostych przypadków),
+    2) jeśli parser nie ogarnie – woła OpenAI,
+    3) jeśli retry_on_fail=True i weryfikacja zwróci False, spróbuje ponownie z OpenAI,
+    4) wynik zawsze zwraca w formacie 'NN.NN'.
+    
+    Args:
+        challenge: tekst zagadki
+        log_fn: funkcja do logowania
+        retry_on_fail: czy przy błędnej weryfikacji spróbować ponownie z OpenAI
+        verify_fn: funkcja weryfikacji (verification_code, answer) -> (bool, str)
+        verification_code: kod weryfikacji do użycia z verify_fn
     """
-    # 1. Spróbujmy policzyć sami
+    # 1. Spróbujmy policzyć sami (tylko proste przypadki)
     try:
         rb_val = _rule_based_solver(challenge, log_fn=log_fn)
     except Exception as e:
@@ -238,19 +258,65 @@ def solve_lobster_challenge(challenge: str, log_fn=None) -> str:
         if log_fn:
             log_fn(f"[RULE] exception: {e!r}")
 
+    answer = None
+    
     if rb_val is not None:
         if log_fn:
             log_fn(f"[RULE] using deterministic result={rb_val}")
-        return f"{float(rb_val):.2f}"
-
-    # 2. Fallback na OpenAI
-    ai_answer = call_openai_solver(challenge, log_fn=log_fn)
-
-    try:
-        ai_val = float(ai_answer)
-    except ValueError:
+        answer = f"{float(rb_val):.2f}"
+    else:
+        # 2. Fallback na OpenAI (dla złożonych przypadków)
         if log_fn:
-            log_fn(f"[ERROR] Non-numeric AI answer: {ai_answer!r}")
-        raise RuntimeError("AI answer is not numeric")
+            log_fn(f"[RULE] parser returned None, using OpenAI")
+        ai_answer = call_openai_solver(challenge, log_fn=log_fn)
+        try:
+            ai_val = float(ai_answer)
+            answer = f"{ai_val:.2f}"
+        except ValueError:
+            if log_fn:
+                log_fn(f"[ERROR] Non-numeric AI answer: {ai_answer!r}")
+            raise RuntimeError("AI answer is not numeric")
 
-    return f"{ai_val:.2f}"
+    # 3. Jeśli retry_on_fail i mamy verify_fn, sprawdź poprawność
+    if retry_on_fail and verify_fn and verification_code:
+        if log_fn:
+            log_fn(f"[SOLVER] First attempt answer: {answer}, verifying...")
+        
+        ok, verify_log = verify_fn(verification_code, answer)
+        
+        if not ok:
+            if log_fn:
+                log_fn(f"[SOLVER] First attempt FAILED. Retrying with OpenAI...")
+            
+            # Spróbuj ponownie z OpenAI (nawet jeśli parser dał wynik)
+            try:
+                ai_answer = call_openai_solver(challenge, log_fn=log_fn)
+                ai_val = float(ai_answer)
+                answer = f"{ai_val:.2f}"
+                
+                if log_fn:
+                    log_fn(f"[SOLVER] Retry answer: {answer}, verifying again...")
+                
+                # Weryfikuj ponownie
+                ok2, verify_log2 = verify_fn(verification_code, answer)
+                
+                if not ok2:
+                    if log_fn:
+                        log_fn(f"[SOLVER] Retry also FAILED. Giving up.")
+                    # Zwróć ostatnią odpowiedź mimo błędu
+                    return answer
+                else:
+                    if log_fn:
+                        log_fn(f"[SOLVER] Retry SUCCESS!")
+                    return answer
+                    
+            except Exception as e:
+                if log_fn:
+                    log_fn(f"[SOLVER] Retry exception: {e!r}")
+                # Zwróć pierwotną odpowiedź
+                return answer
+        else:
+            if log_fn:
+                log_fn(f"[SOLVER] First attempt SUCCESS!")
+
+    return answer
