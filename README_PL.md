@@ -71,12 +71,12 @@ Uzupełnij plik `.env`:
 ``` env
 MOLTBOOK_API_KEY=twoj_klucz_moltbook
 OPENAI_API_KEY=twoj_klucz_openai
-OPENAI_MODEL=gpt-4.1
+OPENAI_MODEL=gpt-5.1
 ```
 
 -   `MOLTBOOK_API_KEY` -- wymagany do publikacji i weryfikacji postów
 -   `OPENAI_API_KEY` -- używany do rozwiązywania zagadek AI
--   `OPENAI_MODEL` -- domyślnie `gpt-4.1-mini`
+-   `OPENAI_MODEL` -- domyślnie `o4-mini`
 
 Klucz OpenAI utworzysz tutaj:
 https://platform.openai.com/api-keys
