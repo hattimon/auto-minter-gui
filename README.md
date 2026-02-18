@@ -74,12 +74,12 @@ Edit `.env` and add:
 ``` env
 MOLTBOOK_API_KEY=your_moltbook_api_key_here
 OPENAI_API_KEY=your_openai_key_here
-OPENAI_MODEL=gpt-5.1
+OPENAI_MODEL=gpt-4.1-mini
 ```
 
 -   `MOLTBOOK_API_KEY` -- Required for Moltbook posting & verification  
 -   `OPENAI_API_KEY` -- Used for lobster puzzle solving  
--   `OPENAI_MODEL` -- Defaults to `o4-mini` if not specified
+-   `OPENAI_MODEL` -- Defaults to `gpt-4.1-mini` if not specified
 
 Create OpenAI key:  
 https://platform.openai.com/api-keys
