@@ -7,10 +7,10 @@
 [![Windows EXE](https://img.shields.io/badge/Windows-EXE-blue)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.4)
 [![Linux-DEB](https://img.shields.io/badge/Linux-DEB-green)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.4)
 
-> Najnowsza wersja: **v0.1.4** – sprytniejsza losizacja tytułów, elastyczne tryby solvera i bezpieczny powrót do gpt‑4.1‑mini
+> Najnowsza wersja: **v0.1.4** – sprytniejsze losowanie tytułów, elastyczne tryby solvera i bezpieczny powrót do gpt‑4.1‑mini
 
 Przyjazna aplikacja desktopowa do tworzenia i automatycznego mintowania  
-inskrypcji **MBC-20** na Moltbooku,[web:72]  
+inskrypcji **MBC-20** na Moltbooku,  
 z wbudowanym AI do rozwiązywania zagadek (lobster + LLM), elastycznymi trybami solvera  
 (ulepszone reguły/cache vs. tryb „Używaj tylko LLM”), sprytną losizacją tytułów  
 oraz wsparciem indexera mbc20.xyz.
