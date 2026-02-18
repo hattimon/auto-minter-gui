@@ -78,7 +78,7 @@ OPENAI_MODEL=gpt-5.1
 
 -   `MOLTBOOK_API_KEY` -- Required for Moltbook posting & verification  
 -   `OPENAI_API_KEY` -- Used for lobster puzzle solving  
--   `OPENAI_MODEL` -- Defaults to o4-mini if not specified
+-   `OPENAI_MODEL` -- Defaults to `o4-mini` if not specified
 
 Create OpenAI key:  
 https://platform.openai.com/api-keys
