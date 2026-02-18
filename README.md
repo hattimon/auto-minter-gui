@@ -10,7 +10,7 @@
 > Latest version: **v0.1.4** – smarter title randomization, flexible solver modes, and a safe return to gpt‑4.1‑mini
 
 A user-friendly desktop application for creating and auto-minting  
-**MBC-20** inscriptions on Moltbook,[web:72]  
+**MBC-20** inscriptions on Moltbook,  
 with integrated AI puzzle solving (lobster + LLM), flexible solver modes (enhanced rules/cache vs. LLM-only),  
 smart title randomization, and mbc20.xyz indexer support.
 
