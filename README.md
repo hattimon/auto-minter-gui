@@ -73,7 +73,7 @@ Edit `.env` and add:
 ``` env
 MOLTBOOK_API_KEY=your_moltbook_api_key_here
 OPENAI_API_KEY=your_openai_key_here
-OPENAI_MODEL=gpt-4.1
+OPENAI_MODEL=gpt-5.1
 ```
 
 -   `MOLTBOOK_API_KEY` -- Required for Moltbook posting & verification  
