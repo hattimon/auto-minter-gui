@@ -45,7 +45,7 @@ load_dotenv()
 
 MOLTBOOK_API_KEY = os.getenv("MOLTBOOK_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "o4-mini")
 
 
 def reload_env():
@@ -55,7 +55,7 @@ def reload_env():
     load_dotenv(override=True)
     MOLTBOOK_API_KEY = os.getenv("MOLTBOOK_API_KEY")
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-    OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
+    OPENAI_MODEL = os.getenv("OPENAI_MODEL", "o4-mini")
 
     try:
         moltbook_client.set_api_key(MOLTBOOK_API_KEY)
