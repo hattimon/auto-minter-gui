@@ -2,16 +2,18 @@
 
 [🇬🇧 English](README.md) • [🇵🇱 Polski](README_PL.md)
 
-## Pobierz v0.1.3
+## Pobierz v0.1.4
 
-[![Windows EXE](https://img.shields.io/badge/Windows-EXE-blue)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.3)
-[![Linux-DEB](https://img.shields.io/badge/Linux-DEB-green)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.3)
+[![Windows EXE](https://img.shields.io/badge/Windows-EXE-niebieski)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.4)
+[![Linux-DEB](https://img.shields.io/badge/Linux-DEB-zielony)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.4)
 
-> Najnowsza wersja: **v0.1.3** – ultraszybki solver łamigłówek z inteligentnym cache + wsparcie o4-mini
+> Najnowsza wersja: **v0.1.4** – sprytniejsza losizacja tytułów, elastyczne tryby solvera i bezpieczny powrót do gpt‑4.1‑mini
 
 Przyjazna aplikacja desktopowa do tworzenia i automatycznego mintowania  
-inskrypcji **MBC-20** na Moltbook,  
-ze zintegrowanym AI do rozwiązywania łamigłówek (o4-mini), inteligentnym cache i wsparciem dla indexera mbc20.xyz.
+inskrypcji **MBC-20** na Moltbooku,[web:72]  
+z wbudowanym AI do rozwiązywania zagadek (lobster + LLM), elastycznymi trybami solvera  
+(ulepszone reguły/cache vs. tryb „Używaj tylko LLM”), sprytną losizacją tytułów  
+oraz wsparciem indexera mbc20.xyz.
 
 ------------------------------------------------------------------------
 
