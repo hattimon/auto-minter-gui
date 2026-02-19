@@ -178,8 +178,61 @@ biblioteki Qt.
 | `moltbook_client.py` | Klient API Moltbook |
 | `.env.example` | Szablon konfiguracji |
 | `requirements.txt` | Lista zależności |
+| `build-deb.sh` | Zbuduj paczkę *.deb |
 
-------------------------------------------------------------------------
+------------------------------------------------------------------------  
+
+## Szybka instalacja (one-liner z GitHub)
+
+Budowa i instalacja najnowszej wersji bez klonowania repozytorium.
+
+### Tryb nieinteraktywny (podaj wersję)
+
+```bash
+curl -sSL https://raw.githubusercontent.com/hattimon/auto-minter-gui/main/build-deb.sh | bash -s -- 0.2.1
+```
+
+### Tryb nieinteraktywny z opisem
+
+```bash
+curl -sSL https://raw.githubusercontent.com/hattimon/auto-minter-gui/main/build-deb.sh   | VERSION=0.2.1 DESCRIPTION="Ulepszony solver + losowe tytuły" bash
+```
+
+### Tryb interaktywny
+
+```bash
+curl -sSL https://raw.githubusercontent.com/hattimon/auto-minter-gui/main/build-deb.sh | bash
+```
+
+### Po instalacji
+
+```bash
+auto-minter-gui
+```
+
+Ścieżka instalacji:
+```
+/opt/auto-minter-gui/
+```
+
+### Odinstalowanie
+
+```bash
+sudo dpkg -r auto-minter-gui
+```
+
+### Wymagania
+
+- git
+- python3-venv
+- imagemagick
+
+### Bezpieczeństwo
+
+Sprawdź skrypt przed uruchomieniem:
+https://github.com/hattimon/auto-minter-gui/blob/main/build-deb.sh
+
+------------------------------------------------------------------------  
 
 ## 🤝 Współpraca
 
