@@ -106,7 +106,7 @@ Wymagania:
 
 ``` powershell
 cd ~/auto-minter-gui
-.build-exe.ps1
+Remove-Item Env:VERSION,Env:DESCRIPTION -ErrorAction SilentlyContinue; iex ((iwr "https://raw.githubusercontent.com/hattimon/auto-minter-gui/main/build-exe.ps1" -UseBasicParsing).Content)
 ```
 
 ### Non-interactive
@@ -133,7 +133,7 @@ Requirements: - Windows 10/11 - git - python 3.9+ - PowerShell 5.1+
 
 ``` powershell
 cd ~/auto-minter-gui
-.build-exe.ps1
+Remove-Item Env:VERSION,Env:DESCRIPTION -ErrorAction SilentlyContinue; iex ((iwr "https://raw.githubusercontent.com/hattimon/auto-minter-gui/main/build-exe.ps1" -UseBasicParsing).Content)
 ```
 
 ### Tryb nieinteraktywny
