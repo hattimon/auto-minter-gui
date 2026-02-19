@@ -191,6 +191,12 @@ biblioteki Qt.
   <a href="builds.md"><b>🚀 Otwórz instrukcję budowy</b></a>
 </p>
 
+## 🐧 Linux (.deb)  |  🪟 Windows (.exe)
+
+### ⚙️ Zbuduj pakiety projektu
+
+👉 **[Otwórz builds.md](builds.md)**  
+
 ------------------------------------------------------------------------  
 
 ## 🤝 Współpraca
