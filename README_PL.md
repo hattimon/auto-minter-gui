@@ -179,6 +179,11 @@ biblioteki Qt.
 | `.env.example` | Szablon konfiguracji |
 | `requirements.txt` | Lista zależności |
 | `build-deb.sh` | Zbuduj paczkę *.deb |
+| `build-exe.ps1` | Zbuduj paczkę *.exe |
+
+------------------------------------------------------------------------  
+
+### [Zbuduj paczke *.deb oraz *exe](builds.md)
 
 ------------------------------------------------------------------------  
 
