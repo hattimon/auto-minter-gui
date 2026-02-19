@@ -1,143 +1,159 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 
 # =============================================================================
-#  build-deb.sh   –   buduje .deb z Auto Minter GUI
-#  Domyślny język: angielski
+# build-deb.sh
+# Buduje pakiet .deb dla Auto Minter GUI
+# Użycie:
+#   ./build-deb.sh               → tryb interaktywny
+#   ./build-deb.sh 0.2.1 "opis"  → tryb nieinteraktywny
+#   curl ... | bash -s -- 0.2.1 "opis wersji"
 # =============================================================================
 
 REPO_DIR="$(pwd)"
 VENV_DIR="$REPO_DIR/.venv"
+ICON_SRC="$REPO_DIR/icons/auto-minter.ico"
 
-# Domyślny język
+# ──────────────────────────────────────────────────────────────────────────────
+# Sprawdzenie zależności systemowych
+# ──────────────────────────────────────────────────────────────────────────────
+echo "Checking required system tools..."
+
+command -v git      >/dev/null || { echo "❌ git is missing → sudo apt install git"; exit 1; }
+command -v python3  >/dev/null || { echo "❌ python3 is missing → sudo apt install python3"; exit 1; }
+python3 -c "import venv" >/dev/null 2>&1 || { echo "❌ python3-venv is missing → sudo apt install python3-venv"; exit 1; }
+command -v convert  >/dev/null || { echo "❌ imagemagick is missing → sudo apt install imagemagick"; exit 1; }
+
+echo "→ System dependencies OK"
+echo ""
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Domyślny język + wykrywanie trybu
+# ──────────────────────────────────────────────────────────────────────────────
 LANG="en"
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Pytanie o zmianę języka na polski (na samym początku)
-# ──────────────────────────────────────────────────────────────────────────────
-echo "Default language: English"
-echo -n "Would you like to switch to Polish? [y/N]: "
-read -r switch_to_pl
-if [[ "$switch_to_pl" =~ ^[Yy]$ ]]; then
-    LANG="pl"
-fi
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Komunikaty w zależności od wybranego języka
-# ──────────────────────────────────────────────────────────────────────────────
-if [[ "$LANG" == "pl" ]]; then
-    MSG_WELCOME="Tworzenie nowej wersji pakietu .deb – Auto Minter GUI"
-    MSG_VERSION="Podaj numer wersji (np. 0.2.1):"
-    MSG_DESC="Krótki opis zmian w tej wersji:"
-    MSG_LANG_SWITCH="Opis jest po polsku. Czy chcesz przełączyć język na angielski? [y/N]: "
-    MSG_CONFIRM="Kontynuować? [t/N]: "
-    MSG_BUILDING="Buduję wersję"
-    MSG_ICON_MISSING="Brak pliku ikony:"
-    MSG_BINARY_MISSING="Brak skompilowanej binarki:"
-    MSG_IMAGEMAGICK="Zainstaluj: sudo apt install imagemagick"
-    MSG_SUCCESS="Gotowy pakiet:"
-    MSG_INSTALL="Instalacja jednym poleceniem:"
-    MSG_RUN="Uruchomienie:"
-    MSG_UNINSTALL="Deinstalacja:"
+if [ $# -ge 1 ]; then
+    VERSION="$1"
+    RELEASE_DESC="${2:-no description provided}"
+    INTERACTIVE=false
+    echo "Non-interactive mode → version = $VERSION"
+    echo "Description    → $RELEASE_DESC"
 else
-    MSG_WELCOME="Building new .deb package – Auto Minter GUI"
-    MSG_VERSION="Enter version number (e.g. 0.2.1):"
-    MSG_DESC="Short description of changes in this release:"
-    MSG_LANG_SWITCH="Description is in Polish. Would you like to switch language to English? [y/N]: "
-    MSG_CONFIRM="Continue? [y/N]: "
-    MSG_BUILDING="Building version"
-    MSG_ICON_MISSING="Missing icon file:"
-    MSG_BINARY_MISSING="Missing built binary:"
-    MSG_IMAGEMAGICK="Install: sudo apt install imagemagick"
-    MSG_SUCCESS="Package ready:"
-    MSG_INSTALL="Install with one command:"
-    MSG_RUN="Run:"
-    MSG_UNINSTALL="Uninstall:"
+    INTERACTIVE=true
 fi
 
-echo ""
-echo "══════════════════════════════════════════════════════════════"
-echo "$MSG_WELCOME"
-echo "══════════════════════════════════════════════════════════════"
-
-# Wersja
-echo "$MSG_VERSION"
-read -r VERSION
-[ -z "$VERSION" ] && { echo "Version cannot be empty"; exit 1; }
-
-# Opis wersji
-echo ""
-echo "$MSG_DESC"
-read -r RELEASE_DESC
-[ -z "$RELEASE_DESC" ] && RELEASE_DESC="(no description provided)"
-
 # ──────────────────────────────────────────────────────────────────────────────
-# Inteligentne pytanie o zmianę języka na podstawie języka opisu
+# Funkcja ładująca komunikaty w wybranym języku
 # ──────────────────────────────────────────────────────────────────────────────
-if [[ "$RELEASE_DESC" =~ [ąćęłńóśźżĄĆĘŁŃÓŚŹŻ] ]]; then
-    # Wygląda na polski → pytamy o angielski
-    echo ""
-    echo "$MSG_LANG_SWITCH"
-    read -r switch_to_en
-    if [[ "$switch_to_en" =~ ^[Yy]$ ]]; then
-        LANG="en"
-        # przeładowanie komunikatów na angielski
-        MSG_WELCOME="Building new .deb package – Auto Minter GUI"
+load_messages() {
+    if [ "$LANG" = "pl" ]; then
+        MSG_WELCOME="Tworzenie pakietu .deb – Auto Minter GUI"
+        MSG_VERSION="Podaj numer wersji (np. 0.2.1): "
+        MSG_DESC="Krótki opis tej wersji: "
+        MSG_LANG_PROMPT="Opis wygląda na polski. Przełączyć na język polski? [Y/n] "
+        MSG_CONFIRM="Kontynuować? [Y/n] "
+        MSG_BUILDING="Buduję wersję"
+        MSG_ICON_ERR="Brak ikony:"
+        MSG_BIN_ERR="Brak binarki:"
+        MSG_SUCCESS="Gotowy pakiet:"
+        MSG_INSTALL="Instalacja:"
+        MSG_RUN="Uruchom:"
+        MSG_UNINSTALL="Deinstalacja:"
+    else
+        MSG_WELCOME="Building .deb package – Auto Minter GUI"
+        MSG_VERSION="Enter version number (e.g. 0.2.1): "
+        MSG_DESC="Short description of this release: "
+        MSG_LANG_PROMPT="Description appears to be in Polish. Switch to Polish? [Y/n] "
+        MSG_CONFIRM="Continue? [Y/n] "
         MSG_BUILDING="Building version"
+        MSG_ICON_ERR="Missing icon:"
+        MSG_BIN_ERR="Missing binary:"
         MSG_SUCCESS="Package ready:"
-        MSG_INSTALL="Install with one command:"
+        MSG_INSTALL="Install:"
         MSG_RUN="Run:"
         MSG_UNINSTALL="Uninstall:"
     fi
-else
-    # Wygląda na angielski → pytamy o polski
-    echo ""
-    echo "Description appears to be in English. Would you like to switch to Polish? [y/N]: "
-    read -r switch_to_pl_late
-    if [[ "$switch_to_pl_late" =~ ^[Yy]$ ]]; then
-        LANG="pl"
-        MSG_WELCOME="Tworzenie nowej wersji pakietu .deb – Auto Minter GUI"
-        MSG_BUILDING="Buduję wersję"
-        MSG_SUCCESS="Gotowy pakiet:"
-        MSG_INSTALL="Instalacja jednym poleceniem:"
-        MSG_RUN="Uruchomienie:"
-        MSG_UNINSTALL="Deinstalacja:"
+}
+
+load_messages
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Tryb interaktywny – zbieranie danych
+# ──────────────────────────────────────────────────────────────────────────────
+if $INTERACTIVE; then
+    echo "══════════════════════════════════════════════════════════════"
+    echo "$MSG_WELCOME"
+    echo "══════════════════════════════════════════════════════════════"
+
+    echo -n "$MSG_VERSION"
+    read -r VERSION
+    [ -z "$VERSION" ] && { echo "Version cannot be empty"; exit 1; }
+
+    echo -n "$MSG_DESC"
+    read -r RELEASE_DESC
+    [ -z "$RELEASE_DESC" ] && RELEASE_DESC="(no description provided)"
+
+    # ───────────────────────────────────────────────────────────────
+    # Inteligentne wykrywanie języka opisu i propozycja zmiany
+    # ───────────────────────────────────────────────────────────────
+    if [[ "$RELEASE_DESC" =~ [ąćęłńóśźżĄĆĘŁŃÓŚŹŻ] ]]; then
+        # Prawdopodobnie polski
+        echo ""
+        echo -n "$MSG_LANG_PROMPT"
+        read -r answer
+        if [[ ! "$answer" =~ ^[nN]$ ]]; then
+            LANG="pl"
+            load_messages
+        fi
+    else
+        # Prawdopodobnie angielski – pytamy o polski
+        echo ""
+        echo -n "Description appears to be English. Switch to Polish? [y/N]: "
+        read -r answer
+        if [[ "$answer" =~ ^[Yy]$ ]]; then
+            LANG="pl"
+            load_messages
+        fi
     fi
+
+    echo ""
+    echo "→ Version     : $VERSION"
+    echo "→ Description : $RELEASE_DESC"
+    echo ""
+    echo -n "$MSG_CONFIRM"
+    read -r confirm
+    [[ "$confirm" =~ ^[nN]$ ]] && { echo "Cancelled."; exit 0; }
 fi
 
-echo ""
-echo "→ Version: $VERSION"
-echo "→ Description: $RELEASE_DESC"
-echo ""
-echo -n "$MSG_CONFIRM"
-read -r confirm
-[[ "$confirm" =~ ^[nN]$ ]] && { echo "Cancelled."; exit 0; }
-
 # ──────────────────────────────────────────────────────────────────────────────
-# venv + build
+# venv + zależności + budowanie binarki
 # ──────────────────────────────────────────────────────────────────────────────
 
-[ ! -d "$VENV_DIR" ] && python3 -m venv "$VENV_DIR"
+if [ ! -d "$VENV_DIR" ]; then
+    echo "Creating virtual environment..."
+    python3 -m venv "$VENV_DIR"
+fi
+
 source "$VENV_DIR/bin/activate"
 
-pip install --upgrade pip
-pip install -r requirements.txt || true
-pip install pyinstaller
+echo "Updating pip & installing dependencies..."
+pip install --upgrade pip >/dev/null
+pip install -r requirements.txt || echo "Warning: some requirements failed to install"
+pip install pyinstaller >/dev/null || true
 
+echo "Building binary with PyInstaller..."
 pyinstaller --onefile --noconsole --name auto-minter-gui main.py
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Budowanie .deb
+# Zmienne .deb
 # ──────────────────────────────────────────────────────────────────────────────
 
-ICON_SRC="$REPO_DIR/icons/auto-minter.ico"
 BIN_SRC="$REPO_DIR/dist/auto-minter-gui"
 PKG_DIR="auto-minter-gui_${VERSION}_amd64"
 DEB_FILE="auto-minter-gui-${VERSION}-linux-amd64.deb"
 
-command -v convert >/dev/null || { echo "$MSG_IMAGEMAGICK"; exit 1; }
-[ -f "$ICON_SRC" ]  || { echo "$MSG_ICON_MISSING $ICON_SRC"; exit 1; }
-[ -f "$BIN_SRC" ]   || { echo "$MSG_BINARY_MISSING $BIN_SRC"; exit 1; }
+[ -f "$ICON_SRC" ]  || { echo "$MSG_ICON_ERR $ICON_SRC"; exit 1; }
+[ -f "$BIN_SRC" ]   || { echo "$MSG_BIN_ERR $BIN_SRC"; exit 1; }
 
 rm -rf "$PKG_DIR" "$DEB_FILE" 2>/dev/null || true
 
@@ -184,11 +200,12 @@ exit 0
 EOF
 chmod +x "$PKG_DIR/DEBIAN/postinst"
 
+echo "$MSG_BUILDING v$VERSION – $RELEASE_DESC"
 dpkg-deb --build "$PKG_DIR"
 mv "${PKG_DIR}.deb" "$DEB_FILE"
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Podsumowanie + instalacja online
+# Podsumowanie + szybka instalacja online
 # ──────────────────────────────────────────────────────────────────────────────
 
 echo ""
@@ -198,19 +215,20 @@ echo "════════════════════════�
 ls -lh "$DEB_FILE"
 
 echo ""
-echo "Quick install / uninstall:"
-if [[ "$LANG" == "pl" ]]; then
-    echo "  Instalacja (z internetu):"
-    echo "    curl -sSL https://raw.githubusercontent.com/hattimon/auto-minter-gui/main/build-deb.sh | VERSION=$VERSION bash"
-    echo "  Deinstalacja:"
-    echo "    sudo dpkg -r auto-minter-gui"
+if [ "$LANG" = "pl" ]; then
+    echo "Szybka instalacja z GitHub (dla przyszłych wydań):"
+    echo "  curl -sSL https://raw.githubusercontent.com/hattimon/auto-minter-gui/main/build-deb.sh | bash -s -- $VERSION"
+    echo ""
+    echo "Deinstalacja:"
+    echo "  sudo dpkg -r auto-minter-gui"
 else
-    echo "  Install (directly from internet):"
-    echo "    curl -sSL https://raw.githubusercontent.com/hattimon/auto-minter-gui/main/build-deb.sh | VERSION=$VERSION bash"
-    echo "  Uninstall:"
-    echo "    sudo dpkg -r auto-minter-gui"
+    echo "Quick install from GitHub (for future releases):"
+    echo "  curl -sSL https://raw.githubusercontent.com/hattimon/auto-minter-gui/main/build-deb.sh | bash -s -- $VERSION"
+    echo ""
+    echo "Uninstall:"
+    echo "  sudo dpkg -r auto-minter-gui"
 fi
 
 deactivate
 echo ""
-echo "Done. Virtual environment deactivated."
+echo "Done. venv deactivated."
