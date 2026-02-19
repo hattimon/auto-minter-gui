@@ -184,7 +184,7 @@ required.
 
 ------------------------------------------------------------------------  
 
-## 🐧 Linux (.deb)  |  🪟 Windows (.exe)
+## 🐧 Linux (.deb)  |  🪟 Windows Portable (.exe)
 
 ### ⚙️ Build Project Packages
 
