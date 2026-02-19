@@ -106,19 +106,19 @@ Wymagania:
 
 ``` powershell
 cd ~/auto-minter-gui
-.uild-exe.ps1
+.build-exe.ps1
 ```
 
 ### Non-interactive
 
 ``` powershell
-$env:VERSION="0.1.5"; $env:DESCRIPTION="Improved solver + random titles"; .uild-exe.ps1
+$env:VERSION="0.1.5"; $env:DESCRIPTION="Improved solver + random titles"; .build-exe.ps1
 ```
 
 ### One-liner
 
 ``` powershell
-powershell -Command "$env:VERSION='0.1.5'; $env:DESCRIPTION='test release'; & '.uild-exe.ps1'"
+powershell -Command "$env:VERSION='0.1.5'; $env:DESCRIPTION='test release'; & '.build-exe.ps1'"
 ```
 
 Output file: auto-minter-gui-0.1.5-windows-x86_64.exe
@@ -133,19 +133,19 @@ Requirements: - Windows 10/11 - git - python 3.9+ - PowerShell 5.1+
 
 ``` powershell
 cd ~/auto-minter-gui
-.uild-exe.ps1
+.build-exe.ps1
 ```
 
 ### Tryb nieinteraktywny
 
 ``` powershell
-$env:VERSION="0.1.5"; $env:DESCRIPTION="ulepszony solver + nowe tytuły"; .uild-exe.ps1
+$env:VERSION="0.1.5"; $env:DESCRIPTION="ulepszony solver + nowe tytuły"; .build-exe.ps1
 ```
 
 ### Jednolinijkowo
 
 ``` powershell
-powershell -Command "$env:VERSION='0.1.5'; $env:DESCRIPTION='test release'; & '.uild-exe.ps1'"
+powershell -Command "$env:VERSION='0.1.5'; $env:DESCRIPTION='test release'; & '.build-exe.ps1'"
 ```
 
 Plik wynikowy: auto-minter-gui-0.1.5-windows-x86_64.exe
