@@ -180,7 +180,59 @@ required.
 | `.env.example` | Environment template |
 | `requirements.txt` | Dependencies list |
 
-------------------------------------------------------------------------
+------------------------------------------------------------------------  
+
+## Quick Installation (one-liner from GitHub)
+
+Build and install the latest version directly from GitHub without cloning the repository.
+
+### Non-interactive (specify version)
+
+```bash
+curl -sSL https://raw.githubusercontent.com/hattimon/auto-minter-gui/main/build-deb.sh | bash -s -- 0.2.1
+```
+
+### Non-interactive with custom description
+
+```bash
+curl -sSL https://raw.githubusercontent.com/hattimon/auto-minter-gui/main/build-deb.sh   | VERSION=0.2.1 DESCRIPTION="Improved solver + random titles" bash
+```
+
+### Interactive mode
+
+```bash
+curl -sSL https://raw.githubusercontent.com/hattimon/auto-minter-gui/main/build-deb.sh | bash
+```
+
+### After installation
+
+```bash
+auto-minter-gui
+```
+
+Install path:
+```
+/opt/auto-minter-gui/
+```
+
+### Uninstall
+
+```bash
+sudo dpkg -r auto-minter-gui
+```
+
+### Requirements
+
+- git
+- python3-venv
+- imagemagick
+
+### Security
+
+Review the script before running:
+https://github.com/hattimon/auto-minter-gui/blob/main/build-deb.sh
+
+------------------------------------------------------------------------  
 
 ## 🤝 Contributing
 
