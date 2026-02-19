@@ -184,7 +184,11 @@ required.
 
 ------------------------------------------------------------------------  
 
-### [Build *.deb and *exe package](builds.md)
+## 🐧 Linux (.deb)  |  🪟 Windows (.exe)
+
+### ⚙️ Build Project Packages
+
+👉 **[Open builds.md](builds.md)**  
 
 ------------------------------------------------------------------------  
 
