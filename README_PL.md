@@ -185,13 +185,7 @@ biblioteki Qt.
 
 # 🛠️ Budowa pakietów
 
-### 🐧 Debian (.deb) • 🪟 Windows Portable (.exe)
-
-<p align="center">
-  <a href="builds.md"><b>🚀 Otwórz instrukcję budowy</b></a>
-</p>
-
-## 🐧 Linux (.deb)  |  🪟 Windows (.exe)
+## 🐧 Linux (.deb)  |  🪟 Windows Portable (.exe)
 
 ### ⚙️ Zbuduj pakiety projektu
 
