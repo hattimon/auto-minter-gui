@@ -201,13 +201,16 @@ curl -sSL https://raw.githubusercontent.com/hattimon/auto-minter-gui/main/build-
 ### Tryb interaktywny (zalecany do ręcznych buildów)
 
 ```bash
-# 1. Pobierz skrypt
+# 1. Wejdź do katalogu repozytorium
+cd ~/auto-minter-gui   # albo tam gdzie masz sklonowane repo
+
+# 2. Pobierz lub zaktualizuj skrypt (jeśli nie masz go jeszcze w repo)
 curl -sSL https://raw.githubusercontent.com/hattimon/auto-minter-gui/main/build-deb.sh -o build-deb.sh
 
-# 2. Nadaj uprawnienia
+# 3. Nadaj uprawnienia
 chmod +x build-deb.sh
 
-# 3. Uruchom instalator interaktywny
+# 4. Uruchom
 ./build-deb.sh
 ```
 
