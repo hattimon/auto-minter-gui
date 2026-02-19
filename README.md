@@ -199,10 +199,17 @@ curl -sSL https://raw.githubusercontent.com/hattimon/auto-minter-gui/main/build-
 curl -sSL https://raw.githubusercontent.com/hattimon/auto-minter-gui/main/build-deb.sh   | VERSION=0.2.1 DESCRIPTION="Improved solver + random titles" bash
 ```
 
-### Interactive mode
+### Interactive installation (recommended for manual builds)
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/hattimon/auto-minter-gui/main/build-deb.sh | bash
+# 1. Download script
+curl -sSL https://raw.githubusercontent.com/hattimon/auto-minter-gui/main/build-deb.sh -o build-deb.sh
+
+# 2. Make executable
+chmod +x build-deb.sh
+
+# 3. Run interactive installer
+./build-deb.sh
 ```
 
 ### After installation
