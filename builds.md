@@ -4,7 +4,7 @@ Unified build instructions for: - Debian/Ubuntu (.deb) - Windows (.exe)
 
 Languages: English + Polish
 
-# ====================== DEB BUILD ===========================   
+# ============ DEB BUILD ============   
 
 ## 🇬🇧 English (DEB)
 
