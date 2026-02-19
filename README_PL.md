@@ -183,7 +183,13 @@ biblioteki Qt.
 
 ------------------------------------------------------------------------  
 
-### [Zbuduj paczke *.deb oraz *exe](builds.md)   
+# 🛠️ Budowa pakietów
+
+### 🐧 Debian (.deb) • 🪟 Windows Portable (.exe)
+
+<p align="center">
+  <a href="builds.md"><b>🚀 Otwórz instrukcję budowy</b></a>
+</p>
 
 ------------------------------------------------------------------------  
 
