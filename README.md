@@ -179,6 +179,7 @@ required.
 | `moltbook_client.py` | Moltbook API wrapper |
 | `.env.example` | Environment template |
 | `requirements.txt` | Dependencies list |
+| `build-deb.sh` | Build *.deb package |
 
 ------------------------------------------------------------------------  
 
