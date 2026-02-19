@@ -202,13 +202,16 @@ curl -sSL https://raw.githubusercontent.com/hattimon/auto-minter-gui/main/build-
 ### Interactive installation (recommended for manual builds)
 
 ```bash
-# 1. Download script
+# 1. Enter the repository directory
+cd ~/auto-minter-gui   # or wherever you cloned the repository
+
+# 2. Download or update the script (if not already present in the repo)
 curl -sSL https://raw.githubusercontent.com/hattimon/auto-minter-gui/main/build-deb.sh -o build-deb.sh
 
-# 2. Make executable
+# 3. Make the script executable
 chmod +x build-deb.sh
 
-# 3. Run interactive installer
+# 4. Run
 ./build-deb.sh
 ```
 
