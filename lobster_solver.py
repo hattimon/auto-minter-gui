@@ -1,5 +1,7 @@
 # lobster_solver.py
-# Najlepsza wersja na 18 lutego 2026 – pełny retry, rozszerzone mnożenie, cache z logów
+
+# Najlepsza wersja – pełny retry, rozszerzone mnożenie, cache z logów,
+# poprawione reguły dodawania / mnożenia.
 
 import os
 import re
@@ -18,9 +20,9 @@ MOLTBOOK_PUZZLE_SYSTEM_PROMPT = (
     "- Ignore ALL symbols except letters, digits, +, -, spaces, ×, x.\n"
     "- Convert number words ('thirty two', 'tWeLvE') to integers.\n"
     "- Recognise:\n"
-    "  (A) base + change (increase/gain/accelerate = +, lose/slow/reduce = -)\n"
-    "  (B) two forces → TOTAL = sum, NET = |a-b|\n"
-    "  (C) power = force × velocity, product, times, multiply, multiplied\n"
+    " (A) base + change (increase/gain/accelerate = +, lose/slow/reduce = -)\n"
+    " (B) two forces → TOTAL = sum, NET = |a-b|\n"
+    " (C) power = force × velocity, product, times, multiply, multiplied\n"
     "- Return ONLY the number with exactly 2 decimal places.\n"
 )
 
@@ -49,55 +51,66 @@ _KNOWN_PUZZLES = {
 }
 
 _NUMBER_WORDS = {
-    "zero":0, "one":1, "two":2, "three":3, "four":4, "five":5, "six":6, "seven":7, "eight":8, "nine":9,
-    "ten":10, "eleven":11, "twelve":12, "thirteen":13, "fourteen":14, "fifteen":15, "sixteen":16,
-    "seventeen":17, "eighteen":18, "nineteen":19, "twenty":20, "twentyone":21, "twentytwo":22,
-    "twentythree":23, "twentyfour":24, "twentyfive":25, "twentysix":26, "twentyseven":27,
-    "twentyeight":28, "twentynine":29, "thirty":30, "thirtyone":31, "thirtytwo":32, "thirtythree":33,
-    "thirtyfour":34, "thirtyfive":35, "thirtysix":36, "thirtyseven":37, "thirtyeight":38, "thirtynine":39,
-    "forty":40, "fortyone":41, "fortytwo":42, "fortythree":43,
+    "zero": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9,
+    "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14, "fifteen": 15, "sixteen": 16,
+    "seventeen": 17, "eighteen": 18, "nineteen": 19, "twenty": 20, "twentyone": 21, "twentytwo": 22,
+    "twentythree": 23, "twentyfour": 24, "twentyfive": 25, "twentysix": 26, "twentyseven": 27,
+    "twentyeight": 28, "twentynine": 29, "thirty": 30, "thirtyone": 31, "thirtytwo": 32, "thirtythree": 33,
+    "thirtyfour": 34, "thirtyfive": 35, "thirtysix": 36, "thirtyseven": 37, "thirtyeight": 38, "thirtynine": 39,
+    "forty": 40, "fortyone": 41, "fortytwo": 42, "fortythree": 43,
 }
+
 
 def log(msg: str):
     if DEBUG_MODE:
         print(msg)
 
+
 def _clean_text(challenge: str) -> str:
+    # sklejamy litera-l/-/litera w jedno słowo
     cleaned = re.sub(r"([a-zA-Z])\s*[-/]\s*([a-zA-Z])", r"\1\2", challenge)
+    # wyrzucamy śmieci, zostawiamy cyfry, litery, +, -, spacje, ×, x
     cleaned = re.sub(r"[^0-9A-Za-z\s\+\-×x]", " ", cleaned)
     cleaned = re.sub(r"\s+", " ", cleaned).lower().strip()
-
+    # redukcja powtórzeń liter (loooobster → lobster)
     tokens = [re.sub(r"([a-z])\1{2,}", r"\1", t) for t in cleaned.split()]
     cleaned = " ".join(tokens)
 
+    # łączenie par typu "twenty two" → "twentytwo"
     tokens = cleaned.split()
-    merged = []
+    merged: List[str] = []
     i = 0
     while i < len(tokens):
-        if i+1 < len(tokens):
-            pair = tokens[i] + tokens[i+1]
+        if i + 1 < len(tokens):
+            pair = tokens[i] + tokens[i + 1]
             if pair in _NUMBER_WORDS:
                 merged.append(pair)
                 i += 2
                 continue
-            if tokens[i] in ("one","two","three","four","five","six","seven","eight","nine") and \
-               tokens[i+1] in ("twenty","thirty","forty"):
-                val = _NUMBER_WORDS[tokens[i]] * 100 + _NUMBER_WORDS[tokens[i+1]]
+            # rzadkie: "one twenty" → 120 itp. (niekoniecznie potrzebne, ale zostawiam)
+            if tokens[i] in ("one", "two", "three", "four", "five", "six", "seven", "eight", "nine") and \
+               tokens[i + 1] in ("twenty", "thirty", "forty"):
+                val = _NUMBER_WORDS[tokens[i]] * 100 + _NUMBER_WORDS[tokens[i + 1]]
                 merged.append(str(val))
                 i += 2
                 continue
         merged.append(tokens[i])
         i += 1
+
     return " ".join(merged)
 
+
 def _extract_numbers(cleaned: str) -> List[int]:
-    nums = []
+    nums: List[int] = []
+    # liczby zapisane cyframi
     for m in re.finditer(r"-?\d+", cleaned):
         nums.append(int(m.group()))
+    # liczby słowne
     for t in cleaned.split():
         if t in _NUMBER_WORDS:
             nums.append(_NUMBER_WORDS[t])
     return nums
+
 
 def _rule_based_solver(challenge: str, log_fn=None) -> Optional[float]:
     cleaned = _clean_text(challenge)
@@ -109,32 +122,75 @@ def _rule_based_solver(challenge: str, log_fn=None) -> Optional[float]:
 
     lower = cleaned.lower()
 
-    # Mnożenie – najwyższy priorytet + rozszerzona lista
-    multiply_keywords = (
-        "times", "product", "multiply", "multiplied", "mUlTiPlIeD", "pRoDuCt",
-        "multiplies", "times the", "product of", "power", "generated by",
-        "×", "x ", "times ", "iloczyn", "produkt", "razy"
-    )
-    if any(w in lower for w in multiply_keywords):
+    # SPECJALNY CASE: "claw force is X newtons ... times Y antenna(s)/touch(es)"
+    if "force" in lower and "times" in lower and (
+        "antenna" in lower or "antennae" in lower or "touch" in lower or "touches" in lower
+    ):
         if len(nums) >= 2:
-            result = reduce(lambda x, y: x * y, nums)
-            log_fn and log_fn(f"[RULE MULTIPLY] wykryto: {multiply_keywords}, liczby: {nums} → {result}")
+            base = nums[0]
+            factor = nums[-1]
+            result = base * factor
+            log_fn and log_fn(f"[RULE SPECIAL force×antenna] {base} * {factor} = {result}")
             return float(result)
 
-    # Net / różnica
-    if any(w in lower for w in ("net", "net force", "difference")):
-        return float(abs(max(nums) - min(nums)))
+    # Mnożenie – najwyższy priorytet
+    multiply_keywords = (
+        "times", "product", "multiply", "multiplied",
+        "multiplies", "times the", "product of",
+        "power", "generated by", "×", " x ", " times ",
+        "iloczyn", "produkt", "razy",
+    )
+    if any(w in lower for w in multiply_keywords) and len(nums) >= 2:
+        # ostrożniej: mnożymy pierwszą i drugą liczbę, żeby nie łapać śmieci
+        a, b = nums[0], nums[1]
+        result = a * b
+        log_fn and log_fn(f"[RULE MULTIPLY] {a} * {b} = {result} (nums={nums})")
+        return float(result)
 
-    # Odejmowanie
-    if any(w in lower for w in ("lose", "reduce", "slow", "decrease", "drop", "minus")):
-        if len(nums) >= 2:
-            return float(nums[0] - sum(nums[1:]))
+    # Net / różnica (net force, difference)
+    if any(w in lower for w in ("net", "net force", "difference")) and len(nums) >= 2:
+        a, b = nums[0], nums[1]
+        res = abs(a - b)
+        log_fn and log_fn(f"[RULE NET] |{a} - {b}| = {res}")
+        return float(res)
 
-    # Dodawanie / suma – domyślne
-    return float(sum(nums))
+    # Odejmowanie – base - zmiany
+    if any(w in lower for w in ("lose", "loses", "lost",
+                                "reduce", "reduces", "reduced",
+                                "slow", "slows", "slowed",
+                                "decrease", "decreases", "decreased",
+                                "drop", "drops", "dropped",
+                                "minus")) and len(nums) >= 2:
+        base = nums[0]
+        change = sum(nums[1:])
+        result = base - change
+        log_fn and log_fn(f"[RULE SUB] {base} - {change} = {result}")
+        return float(result)
+
+    # Dodawanie – base + zmiany (gains, adds, increases, more, another, total force itp.)
+    add_keywords = (
+        "gain", "gains", "gained",
+        "add", "adds", "added",
+        "more", "another",
+        "increase", "increases", "increased",
+        "total", "sum",
+    )
+    if any(w in lower for w in add_keywords) and len(nums) >= 2:
+        base = nums[0]
+        change = sum(nums[1:])
+        result = base + change
+        log_fn and log_fn(f"[RULE ADD] {base} + {change} = {result}")
+        return float(result)
+
+    # Domyślnie: suma wszystkich liczb
+    result = sum(nums)
+    log_fn and log_fn(f"[RULE SUM-DEFAULT] sum({nums}) = {result}")
+    return float(result)
+
 
 def _get_cache_key(challenge: str) -> str:
     return hashlib.md5(_clean_text(challenge).encode()).hexdigest()
+
 
 def call_openai_solver(challenge: str, log_fn=None, use_cache: bool = True) -> str:
     key = _get_cache_key(challenge)
@@ -149,7 +205,6 @@ def call_openai_solver(challenge: str, log_fn=None, use_cache: bool = True) -> s
     model = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
 
     user_prompt = MOLTBOOK_PUZZLE_SYSTEM_PROMPT + "\nPuzzle:\n" + challenge + "\nAnswer:"
-
     url = "https://api.openai.com/v1/chat/completions"
     headers = {"Authorization": f"Bearer {openai_key}", "Content-Type": "application/json"}
     body = {
@@ -167,11 +222,9 @@ def call_openai_solver(challenge: str, log_fn=None, use_cache: bool = True) -> s
             data = r.json()
             raw = data["choices"][0]["message"]["content"].strip()
             answer = raw.splitlines()[0].strip()
-
             if use_cache:
                 _LLM_CACHE[key] = answer
                 log_fn and log_fn(f"[LLM CACHE SAVE] {key[:8]}... → {answer}")
-
             return answer
         except Exception as e:
             log_fn and log_fn(f"[LLM ERROR] próba {attempt}: {e!r}")
@@ -181,21 +234,24 @@ def call_openai_solver(challenge: str, log_fn=None, use_cache: bool = True) -> s
 
     raise RuntimeError("LLM retries exhausted")
 
+
 def solve_lobster_challenge(
     challenge: str,
     log_fn=None,
     force_llm: bool = False,
     retry_on_fail: bool = True,
     verify_fn=None,
-    verification_code: Optional[str] = None
+    verification_code: Optional[str] = None,
 ) -> str:
     cleaned = _clean_text(challenge)
+
+    # najpierw twardy cache z logów
     if cleaned in _KNOWN_PUZZLES:
         ans = _KNOWN_PUZZLES[cleaned]
         log_fn and log_fn(f"[KNOWN CACHE] {ans}")
         return ans
 
-    rb_val = None
+    rb_val: Optional[float] = None
     if not force_llm:
         try:
             rb_val = _rule_based_solver(challenge, log_fn)
@@ -214,29 +270,30 @@ def solve_lobster_challenge(
             ans = call_openai_solver(challenge, log_fn, use_cache=True)
             _LLM_CACHE[key] = ans
 
+    # tryb z automatycznym retry przez verify_fn
     if retry_on_fail and verify_fn and verification_code:
-        log_fn(f"[VERIFY] Pierwsza próba: {ans} (kod: {verification_code[:8]}...)")
+        log_fn and log_fn(f"[VERIFY] Pierwsza próba: {ans} (kod: {verification_code[:8]}...)")
         ok, verify_log = verify_fn(verification_code, ans)
-        
         if not ok:
-            log_fn("[RETRY] Błędna weryfikacja – przełączam na force LLM bez cache i próbuję ponownie")
+            log_fn and log_fn("[RETRY] Błędna weryfikacja – przełączam na force LLM bez cache i próbuję ponownie")
             ans = call_openai_solver(challenge, log_fn=log_fn, use_cache=False)
-            
             ok2, verify_log2 = verify_fn(verification_code, ans)
             if ok2:
-                log_fn(f"[RETRY] SUKCES po drugiej próbie! Odpowiedź: {ans}")
+                log_fn and log_fn(f"[RETRY] SUKCES po drugiej próbie! Odpowiedź: {ans}")
             else:
-                log_fn(f"[RETRY] Druga próba NIEUDANA: {ans}")
-                log_fn(f"[RETRY LOG] {verify_log2}")
+                log_fn and log_fn(f"[RETRY] Druga próba NIEUDANA: {ans}")
+                log_fn and log_fn(f"[RETRY LOG] {verify_log2}")
         else:
-            log_fn(f"[VERIFY] Sukces za pierwszym razem: {ans}")
+            log_fn and log_fn(f"[VERIFY] Sukces za pierwszym razem: {ans}")
 
     return ans
+
 
 def clear_cache():
     n = len(_LLM_CACHE)
     _LLM_CACHE.clear()
     return f"Wyczyszczono {n} wpisów cache LLM"
+
 
 def get_cache_stats() -> dict:
     return {"entries": len(_LLM_CACHE), "keys": list(_LLM_CACHE.keys())[:8]}
