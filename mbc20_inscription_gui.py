@@ -778,7 +778,7 @@ class Mbc20InscriptionGUI(QWidget):
         self.auto_use_only_llm_checkbox = QCheckBox(
             "Use only LLM for Auto‑Mint (skip rules/cache)"
         )
-        self.auto_use_only_llm_checkbox.setChecked(False)
+        self.auto_use_only_llm_checkbox.setChecked(True)
         auto_layout.addRow(self.auto_use_only_llm_checkbox)
 
         self.update_fields_visibility(self.op_combo.currentText())
