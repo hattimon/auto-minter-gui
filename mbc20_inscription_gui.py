@@ -30,12 +30,12 @@ from PyQt6.QtWidgets import (
     QTabWidget,
     QCheckBox,
 )
-from PyQt6.QtGui import QTextCursor
-from PyQt6.QtGui import QGuiApplication
+from PyQt6.QtGui import QTextCursor, QGuiApplication, QColor
 from PyQt6.QtCore import QThread, pyqtSignal, QObject
 
 import moltbook_client  # upewnij się że nazwa modułu jest poprawna
 from auto_minter import AutoMinter, AutoMintConfig
+
 
 MOLTBOOK_BASE_URL = "https://www.moltbook.com"
 HISTORY_LOG_FILE = "mbc20_history.log"
@@ -355,6 +355,7 @@ class Mbc20InscriptionGUI(QWidget):
         self.load_history_to_widget()
         self.load_env_to_widget()
         self.update_auto_description()
+        
         
     # ---------- UI ----------
 
@@ -947,6 +948,16 @@ class Mbc20InscriptionGUI(QWidget):
             elif text.startswith("[INDEXER]"):
                 self.status_label.setText(text)
 
+    def log_post_published(self, post_id: str):
+        """
+        Zielony komunikat o opublikowanym poście z linkiem, w PL/EN.
+        """
+        post_url = f"{MOLTBOOK_BASE_URL}/post/{post_id}"
+        if self.current_lang == "pl":
+            msg = f"SUKCES: Post został pomyślnie opublikowany pod linkiem: {post_url}"
+        else:
+            msg = f"SUCCESS: The post was successfully published at: {post_url}"
+        self.log(msg)
 
     def append_log_from_thread(self, text: str):
         """
@@ -2113,6 +2124,9 @@ class Mbc20InscriptionGUI(QWidget):
                 )
                 return
 
+            # NOWOŚĆ: zielony log z linkiem do posta (PL/EN)
+            self.log_post_published(post_id)
+
             post_url = moltbook_client.get_post_url(post_id)
             QGuiApplication.clipboard().setText(post_url)
 
@@ -2144,7 +2158,7 @@ class Mbc20InscriptionGUI(QWidget):
                 challenge_text,
                 verification_code=verification_code,
             )
-            self.log(f"LLM answer (po ewentualnym retry): {answer}")
+            self.log(f"LLM answer (after a possible retry): {answer}")
 
             ok, verify_log = self.send_verification(verification_code, answer)
             self.log(f"Verify result: {verify_log}")
@@ -2193,6 +2207,7 @@ class Mbc20InscriptionGUI(QWidget):
         except Exception as e:
             QMessageBox.critical(self, self.tr["error"], str(e))
             self.log(f"Error: {e!r}")
+
 
     def on_add_moltbook_slot(self):
         """
