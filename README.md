@@ -2,19 +2,20 @@
 
 [🇬🇧 English](README.md) • [🇵🇱 Polski](README_PL.md)
 
-## Download v0.1.5
+## Download v0.1.6
 
-[![Windows EXE](https://img.shields.io/badge/Windows-EXE-blue)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.5)
-[![Linux-DEB](https://img.shields.io/badge/Linux-DEB-green)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.5)
+[![Windows EXE](https://img.shields.io/badge/Windows-EXE-blue)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.6)
+[![Linux-DEB](https://img.shields.io/badge/Linux-DEB-green)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.6)
 
-> Latest version: **v0.1.5** – improved GUI, Auto-Retry support, smarter .env editor and enhanced lobster solver
+> Latest version: **v0.1.6** – default LLM mode, improved Auto-Mint logic, dynamic UI behavior and clearer agent configuration
 
 A user-friendly desktop application for creating and auto-minting  
 **MBC-20** inscriptions on Moltbook,
 
-with integrated AI puzzle solving (lobster + LLM), flexible solver modes (enhanced solver vs. LLM-only),  
-automatic Moltbook retry handling, structured multi-key `.env` editor, improved logging with status bar,  
-and mbc20.xyz indexer support.
+with integrated AI puzzle solving (lobster + LLM), fully separated LLM control for Main and Auto-Mint,  
+default pure LLM workflow, enhanced bilingual UI (EN/PL), dynamic form visibility on startup,  
+structured multi-key `.env` editor, improved logging with status bar,  
+automatic Moltbook retry handling, and mbc20.xyz indexer support.
 
 ------------------------------------------------------------------------
 
