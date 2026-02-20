@@ -1094,14 +1094,35 @@ class Mbc20InscriptionGUI(QWidget):
         return answer
 
 
-
     def send_verification(self, verification_code: str, answer: str):
+        """
+        Wysyła odpowiedź do Moltbook /verify.
+        Zanim wyślemy, wyciągamy z answer samą liczbę z 2 miejscami po przecinku,
+        bo API wymaga formatu np. "42.00".
+        """
+        import re
+
+        # 1) Spróbuj wyciągnąć liczbę (z kropką lub przecinkiem) z tekstu odpowiedzi
+        #    np. "Total force = 70 × 3 = 210.00" -> 210.00
+        num_match = re.search(r"([-+]?\d+(?:[.,]\d+)?)", answer)
+        if num_match:
+            raw_num = num_match.group(1).replace(",", ".")
+            try:
+                num_val = float(raw_num)
+                # 2) Sformatuj dokładnie jako XX.00
+                answer_clean = f"{num_val:.2f}"
+            except ValueError:
+                # nie udało się sparsować – wyślij oryginalne answer (fallback)
+                answer_clean = answer
+        else:
+            # brak liczby w tekście – wyślij oryginalne answer (fallback)
+            answer_clean = answer
+
         api_key = self.getenv("MOLTBOOK_API_KEY")
         url = f"{MOLTBOOK_BASE_URL}/api/v1/verify"
-
         payload = {
             "verification_code": verification_code,
-            "answer": answer,
+            "answer": answer_clean,
         }
         headers = {
             "Authorization": f"Bearer {api_key}",
@@ -1109,13 +1130,13 @@ class Mbc20InscriptionGUI(QWidget):
         }
 
         self.log_to_file_only(
-            f"DEBUG Sending verification code={verification_code} answer={answer}"
+            f"DEBUG Sending verification code={verification_code} answer={answer_clean}"
         )
 
         r = requests.post(url, json=payload, headers=headers, timeout=15)
         text = r.text
-
         ok_http = 200 <= r.status_code < 300
+
         ok_logic = False
         try:
             data = r.json()
@@ -1123,13 +1144,8 @@ class Mbc20InscriptionGUI(QWidget):
         except Exception:
             pass
 
-        success = ok_http and ok_logic
+        return ok_http and ok_logic, f"Status {r.status_code} {text}"
 
-        self.log_to_file_only(
-            f"Verify response: Status {r.status_code}, Body: {text}"
-        )
-
-        return success, f"Status {r.status_code} {text}"
 
     # ---------- AI test ----------
 
