@@ -151,7 +151,7 @@ LANG_STRINGS = {
 
         "use_enhanced_solver": "Use enhanced lobster solver (NoAI)",
         "use_only_llm": "Use only LLM (skip rules/cache)",
-        "molt_auto_retry": "Moltbook server auto-retry on timeout (30 s)",
+        "molt_auto_retry": "Moltbook server auto-retry on timeout (30 s / errors 5xx)",
         "molt_retry_interval": "Retry interval (sec)",
         "molt_retry_attempts": "Max attempts",
         "env_api_config": "[API configuration]",
@@ -250,7 +250,7 @@ LANG_STRINGS = {
 
         "use_enhanced_solver": "Użyj ulepszonego rozwiązywacza zagadek (NoAI)",
         "use_only_llm": "Używaj tylko LLM (pomiń reguły/cache)",
-        "molt_auto_retry": "Serwer Moltbook – automatyczne ponawianie po przekroczeniu czasu (30 s)",
+        "molt_auto_retry": "Serwer Moltbook – automatyczne ponawianie po przekroczeniu czasu (30 s / błędy 5xx)",
         "molt_retry_interval": "Odstęp między ponowieniami (sekundy)",
         "molt_retry_attempts": "Maks. prób",
         "env_api_config": "[Konfiguracja API]",
