@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import json
 import time
 from dataclasses import dataclass
@@ -12,9 +13,9 @@ class AutoMintConfig:
     submolt: str
     tick: str
     amt: str
-    base_interval: float   # sekundy
-    min_interval: float    # sekundy
-    error_backoff: float   # sekundy
+    base_interval: float  # sekundy
+    min_interval: float   # sekundy
+    error_backoff: float  # sekundy
     max_runs: int
     agent_name: str
 
@@ -37,10 +38,10 @@ class AutoMinter:
         get_description_fn=None,
     ):
         """
-        solve_fn(challenge:str) -> str         – czysta funkcja rozwiązująca zagadkę
+        solve_fn(challenge:str) -> str – czysta funkcja rozwiązująca zagadkę
         verify_fn(verification_code:str, answer:str) -> (ok:bool, log:str)
-        build_title_fn() -> str               – generuje tytuł
-        get_description_fn() -> str           – zwraca opis posta
+        build_title_fn() -> str – generuje tytuł
+        get_description_fn() -> str – zwraca opis posta
         """
         self.solve_fn = solve_fn
         self.verify_fn = verify_fn
@@ -52,6 +53,9 @@ class AutoMinter:
 
         # pierwszy interwał: respektuj zarówno base_interval jak i min_interval
         self.current_interval = max(config.base_interval, config.min_interval)
+
+        # czas ostatniego udanego posta (mintu) – dla miękkiego limitu Moltbooka
+        self.last_success_post_ts: float | None = None
 
     def _should_stop(self, runs_done: int) -> bool:
         if self.stop_flag_fn():
@@ -92,7 +96,6 @@ class AutoMinter:
         full_content = "\n\n".join(parts)
 
         title = self.build_title_fn()
-
         submolt = (self.config.submolt or "mbc20").strip()
         # jeśli ktoś poda m/mbc20 → zostaw samo mbc20
         if submolt.lower().startswith("m/"):
@@ -106,20 +109,48 @@ class AutoMinter:
             f"inscription={inscription_json}"
         )
 
-        resp = moltbook_client.post_to_moltbook(
+        # --- POST do Moltbooka z obsługą statusu / retry_after ---
+        resp_body, status, retry_after = moltbook_client.post_to_moltbook_with_status(
             submolt=submolt,
             title=title,
             content=full_content,
+            log_fn=self.log,
         )
+
+        if status == 0:
+            # timeout / problem sieci
+            raise RuntimeError("Moltbook ReadTimeout or network error")
+
+        if status == 429:
+            # miękki limit serwera – respektujemy retry_after_minutes
+            if retry_after:
+                wait_sec = float(retry_after) * 60.0
+                minutes = wait_sec / 60.0
+                self.log(
+                    f"[AUTO-MINT] 429 Too Many Requests. "
+                    f"Retry after {minutes:.2f}min (server hint)."
+                )
+                self.current_interval = max(wait_sec, self.config.min_interval)
+            else:
+                wait_sec = 30.0 * 60.0
+                self.log(
+                    "[AUTO-MINT] 429 Too Many Requests without retry_after. "
+                    "Assuming 30min server limit."
+                )
+                self.current_interval = max(wait_sec, self.config.min_interval)
+            # sygnał dla run_loop, że to rate limit, a nie błąd solvera
+            raise RuntimeError("Moltbook 429 rate limit")
+
+        if status < 200 or status >= 300 or not resp_body:
+            raise RuntimeError(f"Moltbook POST failed with status {status}")
 
         self.log(
             "[AUTO-MINT] Post response:\n"
-            + json.dumps(resp, indent=2, ensure_ascii=False)
+            + json.dumps(resp_body, indent=2, ensure_ascii=False)
         )
 
         # --- NOWY FORMAT VERIFICATION (jak w GUI) ---
-
-        post_obj = resp.get("post") or {}
+        post_obj = resp_body.get("post") or {}
         post_id = post_obj.get("id")
         if not post_id:
             raise RuntimeError("Post created but missing post.id in response")
@@ -134,10 +165,9 @@ class AutoMinter:
 
         if not verification_code or not challenge_text:
             self.log("[AUTO-MINT] No verification required.")
-
             # brak weryfikacji – od razu indeksujemy po krótkim wait
             self.log(
-                f"[AUTO-MINT] [INDEXER] No verify required, will index "
+                "[AUTO-MINT] [INDEXER] No verify required, will index "
                 f"post_id={post_id} in 10 seconds."
             )
             time.sleep(10.0)
@@ -150,7 +180,8 @@ class AutoMinter:
                 self.log(
                     f"[AUTO-MINT] [INDEXER] ERROR post_id={post_id}: {e!r}"
                 )
-
+            # mint uznajemy za sukces niezależnie od indexera
+            self.last_success_post_ts = time.time()
             return
 
         self.log(
@@ -169,11 +200,10 @@ class AutoMinter:
 
         # w tym miejscu mamy poprawną weryfikację – czekamy 10 s i dopiero indeksujemy
         self.log(
-            f"[AUTO-MINT] [INDEXER] Verification OK, will index "
+            "[AUTO-MINT] [INDEXER] Verification OK, will index "
             f"post_id={post_id} in 10 seconds."
         )
         time.sleep(10.0)
-
         try:
             idx_resp = indexer_client.index_single_post(post_id)
             self.log(
@@ -184,6 +214,9 @@ class AutoMinter:
                 f"[AUTO-MINT] [INDEXER] ERROR post_id={post_id}: {e!r}"
             )
 
+        # mint sukces, niezależnie od stanu indexera
+        self.last_success_post_ts = time.time()
+
     def run_loop(self):
         runs_done = 0
         consecutive_errors = 0
@@ -191,7 +224,19 @@ class AutoMinter:
         # pierwszy mint dopiero po pierwszym interwale (base/min)
         self._sleep_with_check(self.current_interval)
 
+        MOLTBOOK_SOFT_LIMIT = 30 * 60  # 30 min
+
         while not self._should_stop(runs_done):
+            # miękki limit – tylko informacja w logu, nie twarda blokada
+            if self.last_success_post_ts is not None:
+                elapsed = time.time() - self.last_success_post_ts
+                if elapsed < MOLTBOOK_SOFT_LIMIT:
+                    self.log(
+                        "[AUTO-MINT] Soft Moltbook limit: last success "
+                        f"{elapsed/60.0:.2f}min ago. "
+                        "Will still try; server may respond 429."
+                    )
+
             try:
                 self._one_mint()
                 runs_done += 1
@@ -201,27 +246,34 @@ class AutoMinter:
                     self.config.base_interval,
                     self.config.min_interval,
                 )
-
                 minutes = self.current_interval / 60.0
-
                 self.log(
                     f"[AUTO-MINT] Mint #{runs_done} OK. "
                     f"Next run in {minutes:.2f}min"
                 )
+
             except Exception as e:
-                consecutive_errors += 1
-                backoff_base = self.config.error_backoff
-                # kaskada: backoff, 2*backoff, 4*backoff...
-                wait = backoff_base * (2 ** (consecutive_errors - 1))
-                # ale nigdy mniej niż min_interval
-                self.current_interval = max(wait, self.config.min_interval)
-
-                minutes = self.current_interval / 60.0
-
-                self.log(
-                    f"[AUTO-MINT] ERROR: {e}. "
-                    f"Backoff #{consecutive_errors}, wait {minutes:.2f}min"
-                )
+                msg = str(e)
+                if "429 rate limit" in msg:
+                    # current_interval ustawiony w _one_mint na retry_after
+                    minutes = self.current_interval / 60.0
+                    self.log(
+                        f"[AUTO-MINT] RATE LIMIT: {e}. "
+                        f"Next attempt in {minutes:.2f}min"
+                    )
+                    # NIE zwiększamy consecutive_errors
+                else:
+                    consecutive_errors += 1
+                    backoff_base = self.config.error_backoff
+                    # kaskada: backoff, 2*backoff, 4*backoff...
+                    wait = backoff_base * (2 ** (consecutive_errors - 1))
+                    # ale nigdy mniej niż min_interval
+                    self.current_interval = max(wait, self.config.min_interval)
+                    minutes = self.current_interval / 60.0
+                    self.log(
+                        f"[AUTO-MINT] ERROR: {e}. "
+                        f"Backoff #{consecutive_errors}, wait {minutes:.2f}min"
+                    )
 
             if self._should_stop(runs_done):
                 break
