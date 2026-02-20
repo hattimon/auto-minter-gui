@@ -30,6 +30,7 @@ from PyQt6.QtWidgets import (
     QTabWidget,
     QCheckBox,
 )
+from PyQt6.QtGui import QTextCursor
 from PyQt6.QtGui import QGuiApplication
 from PyQt6.QtCore import QThread, pyqtSignal, QObject
 
@@ -134,20 +135,35 @@ LANG_STRINGS = {
         "auto_need_tick_amt": "Tick and amt must be set on Main tab.",
         "auto_invalid_numbers": "Invalid numeric values in Auto Mint tab.",
         "auto_running": "Auto-mint is already running.",
-        "ph_auto_agent_name": "e.g. AgentName",
+        "ph_auto_agent_name": "Enter the name to be added in the post header (e.g. AgentName)",
         "ph_auto_base_interval": "Minutes between successful mints, e.g. 35",
         "ph_auto_min_interval": "Minimal gap between runs, safety limit",
         "ph_auto_error_backoff": "Backoff after error, e.g. 65 or 125 (2h05)",
         "ph_auto_max_runs": "Total mints in this session, 0 = no limit",
         "ph_auto_profile_name": "Auto profile name e.g. AgentName-125m",
         "auto_desc_template":
-            "Agent '{agent}' will mint immediately, then every {baseint} minutes on success. "
-            "On errors: backoff {backoff1} / {backoff2} / {backoff3} minutes until success. "
-            "Max runs: {maxruns}.",
+            "Agent '{agent}' will start immediately. First mint will happen after {baseint} minutes, "
+            "then every {baseint} minutes on success. \nOn errors, the agent waits (backoff) "
+            "{backoff1} / {backoff2} / {backoff3} minutes, increasing the delay on each consecutive error, "
+            "until a successful mint. Max runs: {maxruns}.",
         "auto_desc_agent_unnamed": "Agent (no name)",
         "auto_desc_max_infinite": "infinite",
-        "use_enhanced_solver": "Use enhanced lobster solver",
+
+        "use_enhanced_solver": "Use enhanced lobster solver (NoAI)",
         "use_only_llm": "Use only LLM (skip rules/cache)",
+        "molt_auto_retry": "Moltbook server auto-retry on timeout (30 s)",
+        "molt_retry_interval": "Retry interval (sec)",
+        "molt_retry_attempts": "Max attempts",
+        "env_api_config": "[API configuration]",
+        "env_moltbook_key_label": "Moltbook API key slots",
+        "env_moltbook_key_help": "You can keep multiple Moltbook API keys with descriptions. Only checked ones without '#' will be active in .env.",
+        "env_openai_key_label": "OpenAI API key",
+        "env_openai_key_help": "Used by the puzzle solver (OpenAI Chat API).",
+        "env_openai_model_label": "OpenAI model for puzzles",
+        "env_openai_model_help": "Recommended: gpt-4.1-mini or gpt-4.1. Manual field is always used.",
+        "env_openai_model_manual": "Manual model name (override)",
+        "env_openai_model_combo": "Suggested models",
+        "env_multi_key_label": "Unlock multi key support (Experimental!)",
     },
     "pl": {
         "window_title": "Moltbook MBC-20 GUI Inskrypcje",
@@ -218,20 +234,35 @@ LANG_STRINGS = {
         "auto_need_tick_amt": "Ticker i ilość (amt) muszą być ustawione na zakładce Główne.",
         "auto_invalid_numbers": "Nieprawidłowe wartości liczbowe w zakładce Auto Mint.",
         "auto_running": "Auto-mint już działa.",
-        "ph_auto_agent_name": "np. NazwaAgenta",
+        "ph_auto_agent_name": "Wprowadź nazwę, która zostanie dodana w nagłówku posta (np. AgentName)",
         "ph_auto_base_interval": "Minuty między udanymi mintami, np. 35",
         "ph_auto_min_interval": "Minimalna przerwa między runami, limit bezpieczeństwa",
         "ph_auto_error_backoff": "Backoff po błędzie, np. 65 lub 125 (2h05)",
         "ph_auto_max_runs": "Łączna liczba mintów w sesji, 0 = bez limitu",
         "ph_auto_profile_name": "Nazwa profilu auto, np. NazwaAgenta-125m",
         "auto_desc_template":
-            "Agent '{agent}' wystartuje od razu, potem co {baseint} minut przy sukcesach. "
-            "Przy błędach backoff {backoff1} / {backoff2} / {backoff3} minut aż do udanego mintu. "
-            "Maks. runów: {maxruns}.",
+            "Agent „{agent}” wystartuje od razu. Pierwszy mint nastąpi po {baseint} minutach, "
+            "a kolejne udane minty również co {baseint} minut. \nPrzy błędach agent czeka (backoff) "
+            "{backoff1} / {backoff2} / {backoff3} minut, za każdym kolejnym błędem wydłużając przerwę, "
+            "aż do udanego mintu. Maks. liczba mintów: {maxruns}.",
         "auto_desc_agent_unnamed": "Agent (bez nazwy)",
         "auto_desc_max_infinite": "bez limitu",
-        "use_enhanced_solver": "Użyj ulepszonego solvera zagadek",
+
+        "use_enhanced_solver": "Użyj ulepszonego rozwiązywacza zagadek (NoAI)",
         "use_only_llm": "Używaj tylko LLM (pomiń reguły/cache)",
+        "molt_auto_retry": "Serwer Moltbook – automatyczne ponawianie po przekroczeniu czasu (30 s)",
+        "molt_retry_interval": "Odstęp między ponowieniami (sekundy)",
+        "molt_retry_attempts": "Maks. prób",
+        "env_api_config": "[Konfiguracja API]",
+        "env_moltbook_key_label": "Sloty Moltbook API key",
+        "env_moltbook_key_help": "Możesz trzymać wiele kluczy Moltbook z opisami. Tylko odznaczone '#' (zaznaczone w GUI) będą aktywne w .env.",
+        "env_openai_key_label": "OpenAI API key",
+        "env_openai_key_help": "Używany przez solver zagadek (OpenAI Chat API).",
+        "env_openai_model_label": "Model OpenAI do zagadek",
+        "env_openai_model_help": "Rekomendowane: gpt-4.1-mini lub gpt-4.1. Ręczne pole ma zawsze pierwszeństwo.",
+        "env_openai_model_manual": "Ręczna nazwa modelu (nadpisuje wybór)",
+        "env_openai_model_combo": "Sugerowane modele",
+        "env_multi_key_label": "Odblokuj obsługę wielu kluczy (Eksperymentalne!)",
     },
 }
 
@@ -431,15 +462,54 @@ class Mbc20InscriptionGUI(QWidget):
         form.addRow(self.postdesc_label, self.description_edit)
         form.addRow(profile_layout)
 
-        # checkbox: enhanced solver
-        self.use_enhanced_lobster_solver = QCheckBox(self.tr["use_enhanced_solver"])
-        self.use_enhanced_lobster_solver.setChecked(True)
-        main_tab_layout.addWidget(self.use_enhanced_lobster_solver)
+        # --- Solver (LLM) + Moltbook auto‑retry w dwóch kolumnach ---
 
-        # NOWE: checkbox "Use only LLM"
+        solver_retry_row = QHBoxLayout()
+
+        # LEWA KOLUMNA – solver
+        solver_col = QVBoxLayout()
+        self.use_enhanced_lobster_solver = QCheckBox(self.tr["use_enhanced_solver"])
+        self.use_enhanced_lobster_solver.setChecked(False)  # domyślnie wyłączony
+        solver_col.addWidget(self.use_enhanced_lobster_solver)
+
         self.use_only_llm_checkbox = QCheckBox(self.tr["use_only_llm"])
-        self.use_only_llm_checkbox.setChecked(False)
-        main_tab_layout.addWidget(self.use_only_llm_checkbox)
+        self.use_only_llm_checkbox.setChecked(True)  # domyślnie włączony
+        solver_col.addWidget(self.use_only_llm_checkbox)
+
+        solver_retry_row.addLayout(solver_col)
+
+        # PRAWA KOLUMNA – Moltbook auto‑retry
+        retry_col = QVBoxLayout()
+
+        self.molt_auto_retry_checkbox = QCheckBox(self.tr["molt_auto_retry"])
+        self.molt_auto_retry_checkbox.setChecked(False)
+        retry_col.addWidget(self.molt_auto_retry_checkbox)
+
+        retry_row_inner = QHBoxLayout()
+
+        self.molt_retry_interval_label = QLabel(self.tr["molt_retry_interval"])
+        retry_row_inner.addWidget(self.molt_retry_interval_label)
+
+        self.molt_retry_interval_edit = QLineEdit("60")  # sekundy
+        self.molt_retry_interval_edit.setFixedWidth(80)
+        retry_row_inner.addWidget(self.molt_retry_interval_edit)
+
+        self.molt_retry_attempts_label = QLabel(self.tr["molt_retry_attempts"])
+        retry_row_inner.addWidget(self.molt_retry_attempts_label)
+
+        self.molt_retry_attempts_edit = QLineEdit("3")
+        self.molt_retry_attempts_edit.setFixedWidth(60)
+        retry_row_inner.addWidget(self.molt_retry_attempts_edit)
+
+        retry_row_inner.addStretch()
+        retry_col.addLayout(retry_row_inner)
+
+        solver_retry_row.addLayout(retry_col)
+        solver_retry_row.addStretch()
+
+        main_tab_layout.addLayout(solver_retry_row)
+        # koniec bloku z tabelką
+
 
         button_layout = QHBoxLayout()
         self.post_button = QPushButton(self.tr["create_btn"])
@@ -494,11 +564,12 @@ class Mbc20InscriptionGUI(QWidget):
         self.history_index_status_label = QLabel("")
         history_layout.addWidget(self.history_index_status_label)
 
-
         # ENV TAB
         self.env_tab = QWidget()
         self.tabs.addTab(self.env_tab, self.tr["tab_env"])
         env_layout = QVBoxLayout(self.env_tab)
+
+        # --- przyciski ładowania/zapisu .env ---
         env_buttons = QHBoxLayout()
         self.env_load_button = QPushButton(self.tr["env_load"])
         self.env_save_button = QPushButton(self.tr["env_save"])
@@ -508,11 +579,107 @@ class Mbc20InscriptionGUI(QWidget):
         env_buttons.addWidget(self.env_save_button)
         env_buttons.addStretch()
         env_layout.addLayout(env_buttons)
+
+        # --- [Konfiguracja API] ---
+        self.env_api_group_label = QLabel(self.tr["env_api_config"])
+        self.env_api_group_label.setStyleSheet(
+            "color:#ffd54f; font-weight:bold; margin-top:8px;"
+        )
+        env_layout.addWidget(self.env_api_group_label)
+
+        # checkbox multi-key (Experimental!)
+        multi_row = QHBoxLayout()
+        self.env_multi_key_checkbox = QCheckBox(self.tr["env_multi_key_label"])
+        self.env_multi_key_checkbox.setStyleSheet("color:#ff5555;")  # czerwony tekst
+        self.env_multi_key_checkbox.setChecked(False)
+        self.env_multi_key_checkbox.stateChanged.connect(
+            self.on_env_multi_key_toggled
+        )
+        multi_row.addWidget(self.env_multi_key_checkbox)
+        multi_row.addStretch()
+        env_layout.addLayout(multi_row)
+
+        # sloty MOLTBOOK_API_KEY (lista dynamicznych wierszy)
+        self.env_moltbook_slots_layout = QVBoxLayout()
+        env_layout.addLayout(self.env_moltbook_slots_layout)
+        # lista słowników: {"checkbox", "label_edit", "key_edit", "slot_meta"}
+        self.env_moltbook_slots_widgets = []
+
+        # przyciski dodaj/usuń slot API
+        slots_btn_row = QHBoxLayout()
+        self.env_add_slot_button = QPushButton("+ API key")
+        self.env_remove_slot_button = QPushButton("- API key")
+        self.env_add_slot_button.clicked.connect(self.on_add_moltbook_slot)
+        self.env_remove_slot_button.clicked.connect(self.on_remove_moltbook_slot)
+        slots_btn_row.addWidget(self.env_add_slot_button)
+        slots_btn_row.addWidget(self.env_remove_slot_button)
+        slots_btn_row.addStretch()
+        env_layout.addLayout(slots_btn_row)
+
+
+        # OpenAI – pojedynczy key + model
+        api_form = QFormLayout()
+
+        # OPENAI_API_KEY
+        openai_key_label = QLabel(self.tr["env_openai_key_label"])
+        openai_key_help = QLabel(self.tr["env_openai_key_help"])
+        openai_key_help.setWordWrap(True)
+        openai_key_help.setStyleSheet("color:#aaaaaa; font-size:8pt;")
+        openai_label_layout = QVBoxLayout()
+        openai_label_layout.addWidget(openai_key_label)
+        openai_label_layout.addWidget(openai_key_help)
+        openai_label_widget = QWidget()
+        openai_label_widget.setLayout(openai_label_layout)
+
+        self.env_openai_key_edit = QLineEdit()
+        self.env_openai_key_edit.setPlaceholderText("Paste your API key here (e.g. sk-proj-yourKey)")
+        api_form.addRow(openai_label_widget, self.env_openai_key_edit)
+
+        # OPENAI_MODEL
+        openai_model_label = QLabel(self.tr["env_openai_model_label"])
+        openai_model_help = QLabel(self.tr["env_openai_model_help"])
+        openai_model_help.setWordWrap(True)
+        openai_model_help.setStyleSheet("color:#aaaaaa; font-size:8pt;")
+        openai_model_label_layout = QVBoxLayout()
+        openai_model_label_layout.addWidget(openai_model_label)
+        openai_model_label_layout.addWidget(openai_model_help)
+        openai_model_label_widget = QWidget()
+        openai_model_label_widget.setLayout(openai_model_label_layout)
+
+        model_row_widget = QWidget()
+        model_row_layout = QHBoxLayout(model_row_widget)
+        model_row_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.env_openai_model_combo = QComboBox()
+        self.env_openai_model_combo.addItem(self.tr["env_openai_model_combo"])
+        self.env_openai_model_combo.addItems([
+            "gpt-4.1-mini",
+            "gpt-4.1",
+            "gpt-4o-mini",
+            "gpt-4o",
+            "gpt-3.5-turbo-0125",
+        ])
+        self.env_openai_model_combo.currentTextChanged.connect(
+            self.on_env_model_combo_changed
+        )
+        model_row_layout.addWidget(self.env_openai_model_combo)
+
+        self.env_openai_model_edit = QLineEdit()
+        self.env_openai_model_edit.setPlaceholderText("Select your model (e.g. gpt-4.1-mini)")
+        model_row_layout.addWidget(self.env_openai_model_edit)
+
+        api_form.addRow(openai_model_label_widget, model_row_widget)
+
+        env_layout.addLayout(api_form)
+
+        # surowy edytor .env
         self.env_edit = QTextEdit()
         env_layout.addWidget(self.env_edit)
 
+
         # AUTO TAB
         self.auto_tab = QWidget()
+
         self.tabs.addTab(self.auto_tab, self.tr["tab_auto"])
         auto_layout = QFormLayout(self.auto_tab)
 
@@ -559,7 +726,7 @@ class Mbc20InscriptionGUI(QWidget):
             self.tr["auto_base_interval"], self.auto_base_interval_edit
         )
 
-        self.auto_min_interval_edit = QLineEdit("10")
+        self.auto_min_interval_edit = QLineEdit("1")
         self.auto_min_interval_edit.setPlaceholderText(
             self.tr["ph_auto_min_interval"]
         )
@@ -570,7 +737,7 @@ class Mbc20InscriptionGUI(QWidget):
             self.tr["auto_min_interval"], self.auto_min_interval_edit
         )
 
-        self.auto_error_backoff_edit = QLineEdit("125")
+        self.auto_error_backoff_edit = QLineEdit("31")
         self.auto_error_backoff_edit.setPlaceholderText(
             self.tr["ph_auto_error_backoff"]
         )
@@ -655,14 +822,30 @@ class Mbc20InscriptionGUI(QWidget):
         self.auto_profile_name_edit.setPlaceholderText(
             self.tr["ph_auto_profile_name"]
         )
-
         # NOWE: teksty checkboxów solvera
         if hasattr(self, "use_enhanced_lobster_solver"):
             self.use_enhanced_lobster_solver.setText(self.tr["use_enhanced_solver"])
         if hasattr(self, "use_only_llm_checkbox"):
             self.use_only_llm_checkbox.setText(self.tr["use_only_llm"])
 
+        # nowe labelki Moltbook auto‑retry
+        if hasattr(self, "molt_auto_retry_checkbox"):
+            self.molt_auto_retry_checkbox.setText(self.tr["molt_auto_retry"])
+        if hasattr(self, "molt_retry_interval_label"):
+            self.molt_retry_interval_label.setText(self.tr["molt_retry_interval"])
+        if hasattr(self, "molt_retry_attempts_label"):
+            self.molt_retry_attempts_label.setText(self.tr["molt_retry_attempts"])
+
+        # ENV tab labels
+        if hasattr(self, "env_api_group_label"):
+            self.env_api_group_label.setText(self.tr["env_api_config"])
+        if hasattr(self, "env_openai_model_combo") and self.env_openai_model_combo.count() > 0:
+            self.env_openai_model_combo.setItemText(0, self.tr["env_openai_model_combo"])
+        if hasattr(self, "env_multi_key_checkbox"):
+            self.env_multi_key_checkbox.setText(self.tr["env_multi_key_label"])
+
         self.update_auto_description()
+
 
     # ---------- helpers / logging ----------
 
@@ -672,35 +855,128 @@ class Mbc20InscriptionGUI(QWidget):
             raise RuntimeError(f"Missing key in environment: {key} (.env)")
         return val
 
+    def _format_log_line_html(self, line: str) -> str:
+        """
+        Kolorowanie linii logu na podstawie tagów / treści.
+        Priorytet: ERROR > TIMEOUT > AUTO-MINT/INDEXER > LLM/DEBUG/AI TEST > CACHE > reszta.
+        """
+        lower = line.lower()
+
+        # 1. Krytyczne błędy
+        if ("[error" in lower or " error" in lower or "exception" in lower
+                or "traceback" in lower):
+            color = "#ff5555"   # czerwony – krytyczne
+
+        # 2. Timeout / problemy sieci
+        elif "timeout" in lower or "readtimeout" in lower or "timed out" in lower:
+            color = "#ffb86c"   # jasny pomarańcz – problemy sieciowe
+
+        # 3. AUTO-MINT
+        elif "[auto-mint]" in lower:
+            color = "#00bcd4"   # morski – auto-mint / agent
+
+        # 4. INDEXER
+        elif "[indexer]" in lower:
+            if "error" in lower:
+                color = "#ff8c00"  # mocniejszy pomarańcz dla błędów indexera
+            else:
+                color = "#ffd54f"  # żółty – info indexera
+
+        # 5. AI TEST
+        elif "ai test" in lower:
+            color = "#bd93f9"   # fiolet – testy AI
+
+        # 6. OpenAI / LLM / DEBUG
+        elif "[openai]" in lower or "[llm" in lower or "[debug]" in lower:
+            color = "#a6e22e"   # jasnozielony – LLM/DEBUG
+
+        # 7. CACHE (LLM CACHE / KNOWN CACHE)
+        elif "cache" in lower:
+            color = "#8be9fd"   # cyjan – cache
+
+        # 8. Verify / weryfikacja
+        elif "verify" in lower or "verification" in lower:
+            color = "#ffc107"   # żółty – weryfikacja odpowiedzi
+
+        # 9. Sukcesy / OK
+        elif " test ok" in lower or "sukces" in lower or " ok " in lower:
+            color = "#4caf50"   # zielony – sukces / poprawna odpowiedź
+
+        # 11. moltbook_client
+        elif "moltbook_client" in lower:
+            color = "#e01b24"   # czerwień - Moltbook Client
+
+        # 10. Domyślne info
+        else:
+            color = "#dddddd"   # jasnoszary – zwykłe logi
+
+        return f'<span style="color:{color}">{line}</span>'
+
+
     def log(self, text: str):
-        # Używane w głównym wątku GUI.
+        """
+        Log do widgetu log_edit + zapis do pliku.
+        Kolorowanie przez HTML, auto-scroll na dół.
+        """
         ts = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
         line = f"[{ts}] {text}"
-        existing = self.log_edit.toPlainText()
-        if existing:
-            self.log_edit.setPlainText(existing + "\n" + line)
+        html_line = self._format_log_line_html(line)
+
+        cursor = self.log_edit.textCursor()
+        cursor.movePosition(QTextCursor.MoveOperation.End)
+
+        if self.log_edit.toPlainText():
+            cursor.insertHtml("<br>" + html_line)
         else:
-            self.log_edit.setPlainText(line)
+            cursor.insertHtml(html_line)
+
+        self.log_edit.setTextCursor(cursor)
+        self.log_edit.ensureCursorVisible()
+
         try:
             with open(HISTORY_LOG_FILE, "a", encoding="utf-8") as f:
                 f.write(line + "\n")
         except Exception:
             pass
 
+        if hasattr(self, "status_label"):
+            if "Retrying in" in text:
+                self.status_label.setText(text)
+            elif text.startswith("Creating post"):
+                self.status_label.setText(self.tr.get("molt_auto_retry", "Working..."))
+            elif text.startswith("[INDEXER]"):
+                self.status_label.setText(text)
+
+
     def append_log_from_thread(self, text: str):
-        # Slot dla sygnału z wątku Auto-Mint – Qt wywołuje to w wątku GUI.
+        """
+        Slot dla sygnału z wątku Auto-Mint.
+        Qt wywołuje to w wątku GUI – możemy bezpiecznie dotykać log_edit.
+        """
         ts = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
         line = f"[{ts}] {text}"
-        existing = self.log_edit.toPlainText()
-        if existing:
-            self.log_edit.setPlainText(existing + "\n" + line)
+        html_line = self._format_log_line_html(line)
+
+        cursor = self.log_edit.textCursor()
+        cursor.movePosition(QTextCursor.MoveOperation.End)
+
+        if self.log_edit.toPlainText():
+            cursor.insertHtml("<br>" + html_line)
         else:
-            self.log_edit.setPlainText(line)
+            cursor.insertHtml(html_line)
+
+        self.log_edit.setTextCursor(cursor)
+        self.log_edit.ensureCursorVisible()
+
         try:
             with open(HISTORY_LOG_FILE, "a", encoding="utf-8") as f:
                 f.write(line + "\n")
         except Exception:
             pass
+
+        if hasattr(self, "status_label") and "AUTO-MINT" in text:
+            self.status_label.setText(text)
+
 
     def log_to_file_only(self, text: str):
         # Bezpieczne do użycia z wątku workera (brak Qt).
@@ -1258,27 +1534,469 @@ class Mbc20InscriptionGUI(QWidget):
                 f"Indexing finished. Indexed {indexed}/{total} posts. Errors={errors}"
             )
 
+    def parse_env_api_slots(self, text: str):
+        """
+        Parsuje .env i zwraca:
+        - slots_moltbook: lista slotów MOLTBOOK_API_KEY
+          z labelami:
+            * z komentarzy '#N - nazwa' lub '#N nazwa' NAD kluczem,
+            * albo, jeśli brak komentarza, czysta numeracja '1', '2', '3', ...
+        - other_lines: wszystkie pozostałe linie.
+        """
+        lines = text.splitlines()
+        slots_moltbook = []
+        other_lines = []
 
-    def load_env_to_widget(self):
-        if not os.path.exists(ENV_FILE):
-            self.env_edit.setPlainText("")
+        # mapowanie: indeks linii z kluczem -> nazwa z komentarza
+        name_by_index: dict[int, str] = {}
+
+        for idx, line in enumerate(lines):
+            stripped = line.strip()
+            if not stripped.startswith("#"):
+                continue
+
+            body = stripped[1:].strip()
+
+            # przypadek "#1 - serafinus"
+            if "-" in body:
+                left, right = body.split("-", 1)
+                if left.strip().isdigit():
+                    name_by_index[idx + 1] = right.strip()
+                    continue
+
+            # przypadek "#1 serafinus"
+            parts = body.split(" ", 1)
+            if len(parts) == 2 and parts[0].isdigit():
+                name_by_index[idx + 1] = parts[1].strip()
+
+        # licznik do automatycznej numeracji
+        auto_counter = 1
+
+        for idx, line in enumerate(lines):
+            stripped = line.strip()
+
+            if stripped.startswith("#MOLTBOOK_API_KEY") or stripped.startswith("MOLTBOOK_API_KEY"):
+                active = not stripped.startswith("#")
+                body = stripped.lstrip("#")
+                _, _, rhs = body.partition("=")
+                value = rhs.strip()
+
+                # najpierw spróbuj wziąć nazwę z komentarza
+                label = name_by_index.get(idx, "")
+                if not label:
+                    # BRAK komentarza: ustaw prostą numerację '1', '2', '3', ...
+                    label = str(auto_counter)
+                auto_counter += 1
+
+                slots_moltbook.append(
+                    {
+                        "line_index": idx,
+                        "raw_line": line,
+                        "active": active,
+                        "label": label,
+                        "value": value,
+                    }
+                )
+            else:
+                other_lines.append(line)
+
+        return slots_moltbook, other_lines
+
+
+    def rebuild_moltbook_slots_ui(self, slots_moltbook):
+        layout = self.env_moltbook_slots_layout
+        if layout is None:
             return
-        try:
-            with open(ENV_FILE, "r", encoding="utf-8") as f:
-                self.env_edit.setPlainText(f.read())
-        except Exception as e:
-            self.env_edit.setPlainText(str(e))
+
+        # zczytaj aktualne nazwy z GUI (jeśli już są)
+        existing_labels = []
+        if hasattr(self, "env_moltbook_slots_widgets"):
+            for w in self.env_moltbook_slots_widgets:
+                label_edit: QLineEdit = w["label_edit"]
+                key_edit: QLineEdit = w["key_edit"]
+                existing_labels.append({
+                    "value": key_edit.text().strip(),
+                    "label": label_edit.text().strip(),
+                })
+
+        # wyczyść layout
+        while layout.count():
+            item = layout.takeAt(0)
+            w = item.widget()
+            if w is not None:
+                w.deleteLater()
+
+        self.env_moltbook_slots_widgets = []
+        multi_enabled = self.env_multi_key_checkbox.isChecked()
+
+        # single‑mode: wymuś dokładnie jeden active
+        if not multi_enabled and slots_moltbook:
+            first_active_index = None
+            for i, slot in enumerate(slots_moltbook):
+                if slot["active"]:
+                    first_active_index = i
+                    break
+            if first_active_index is None:
+                first_active_index = 0
+            for i in range(len(slots_moltbook)):
+                slots_moltbook[i]["active"] = (i == first_active_index)
+
+        for slot in slots_moltbook:
+            value = slot["value"]
+            label_from_parser = slot.get("label", "")
+
+            # spróbuj znaleźć istniejącą nazwę dla tego samego klucza
+            label_from_gui = ""
+            for e in existing_labels:
+                if e["value"] == value and e["label"]:
+                    label_from_gui = e["label"]
+                    break
+
+            # priorytet: GUI > nazwa z pliku > pusty string
+            label_final = label_from_gui or label_from_parser or ""
+
+            row_widget = QWidget()
+            row_layout = QHBoxLayout(row_widget)
+            row_layout.setContentsMargins(0, 0, 0, 0)
+
+            cb = QCheckBox()
+            cb.setChecked(slot["active"])
+            row_layout.addWidget(cb)
+
+            label_edit = QLineEdit(label_final)
+            label_edit.setPlaceholderText("API description (e.g. Key 1)")
+            label_edit.setMinimumWidth(140)
+            row_layout.addWidget(label_edit)
+
+            key_edit = QLineEdit(value)
+            key_edit.setPlaceholderText("moltbook_sk_...")
+            row_layout.addWidget(key_edit)
+
+            row_layout.addStretch()
+            layout.addWidget(row_widget)
+
+            self.env_moltbook_slots_widgets.append({
+                "checkbox": cb,
+                "label_edit": label_edit,
+                "key_edit": key_edit,
+                "slot_meta": slot,
+            })
+
+            cb.stateChanged.connect(self.on_moltbook_slot_checkbox_changed)
+
+        self.apply_moltbook_slots_editability()
+
+
+    def on_moltbook_slot_checkbox_changed(self, state: int):
+        """
+        Reakcja na kliknięcie checkboxa przy konkretnym slocie.
+        W trybie single wybór jednego odznacza pozostałe.
+        """
+        multi_enabled = self.env_multi_key_checkbox.isChecked()
+
+        if not multi_enabled:
+            # single – tylko jeden zaznaczony
+            sender_cb = self.sender()
+            if not isinstance(sender_cb, QCheckBox):
+                return
+            if state:  # zaznaczony
+                for w in self.env_moltbook_slots_widgets:
+                    cb = w["checkbox"]
+                    if cb is not sender_cb:
+                        cb.setChecked(False)
+            else:
+                # nie pozwól wyłączyć wszystkich – jeśli wszystko się odznaczyło, włącz z powrotem
+                any_checked = any(
+                    w["checkbox"].isChecked()
+                    for w in self.env_moltbook_slots_widgets
+                )
+                if not any_checked:
+                    sender_cb.setChecked(True)
+
+        # po zmianie checkboxów przeliczyć edytowalność + style
+        self.apply_moltbook_slots_editability()
+
+
+    def apply_moltbook_slots_editability(self):
+        """
+        Ustawia read-only i zaciemnienie 50% dla nieaktywnych slotów.
+        Aktywne sloty – normalne, edytowalne.
+        """
+        multi_enabled = self.env_multi_key_checkbox.isChecked()
+
+        for w in self.env_moltbook_slots_widgets:
+            cb: QCheckBox = w["checkbox"]
+            label_edit: QLineEdit = w["label_edit"]
+            key_edit: QLineEdit = w["key_edit"]
+
+            active = cb.isChecked()
+
+            editable = active  # tylko zaznaczone sloty edytowalne
+            label_edit.setReadOnly(not editable)
+            key_edit.setReadOnly(not editable)
+
+            if editable:
+                # normalny wygląd
+                label_edit.setStyleSheet("")
+                key_edit.setStyleSheet("")
+            else:
+                # zaciemnienie 50% – tło ciemniejsze, tekst jaśniejszy
+                label_edit.setStyleSheet(
+                    "background-color: rgba(255,255,255,0.08); color: rgba(255,255,255,0.4);"
+                )
+                key_edit.setStyleSheet(
+                    "background-color: rgba(255,255,255,0.08); color: rgba(255,255,255,0.4);"
+                )
+
+        # gdy multi OFF – upewnij się, że dokładnie jeden jest zaznaczony (jeśli jakikolwiek jest)
+        if not multi_enabled and self.env_moltbook_slots_widgets:
+            checked_indices = [
+                i for i, w in enumerate(self.env_moltbook_slots_widgets)
+                if w["checkbox"].isChecked()
+            ]
+            if len(checked_indices) == 0:
+                # wymuś pierwszy jako aktywny
+                self.env_moltbook_slots_widgets[0]["checkbox"].setChecked(True)
+            elif len(checked_indices) > 1:
+                # zostaw tylko pierwszy
+                first = checked_indices[0]
+                for i, w in enumerate(self.env_moltbook_slots_widgets):
+                    w["checkbox"].setChecked(i == first)
+
+    def on_env_model_combo_changed(self, value: str):
+        """
+        Wybrany model z listy wpisuje do pola manualnego (bez 'OPENAI_MODEL=').
+        """
+        if not value or value == self.tr.get("env_openai_model_combo"):
+            return
+        self.env_openai_model_edit.setText(value)
+
+    def on_env_multi_key_toggled(self, state: int):
+        """
+        Kliknięcie 'Unlock multi key support'.
+        - gdy wyłączasz multi: wymuś tylko jeden aktywny slot
+        - gdy włączasz: nie zmieniaj zaznaczeń, jedynie pozwól na wiele
+        """
+        multi_enabled = bool(state)
+
+        if not self.env_moltbook_slots_widgets:
+            return
+
+        if not multi_enabled:
+            # przejście do single – zostaw tylko pierwszy zaznaczony,
+            # albo jeśli żaden nie był, zaznacz pierwszy slot
+            checked_indices = [
+                i for i, w in enumerate(self.env_moltbook_slots_widgets)
+                if w["checkbox"].isChecked()
+            ]
+            if not checked_indices:
+                # zaznacz pierwszy
+                self.env_moltbook_slots_widgets[0]["checkbox"].setChecked(True)
+            else:
+                first = checked_indices[0]
+                for i, w in enumerate(self.env_moltbook_slots_widgets):
+                    w["checkbox"].setChecked(i == first)
+
+        # zaktualizuj read-only + style
+        self.apply_moltbook_slots_editability()
 
     def save_env_from_widget(self):
         try:
-            text = self.env_edit.toPlainText()
+            raw_text = self.env_edit.toPlainText()
+            lines = raw_text.splitlines()
+
+            header = "### Edited by Moltbook MBC-20 Inscription GUI # Repo: https://github.com/hattimon/auto-minter-gui ###"
+
+            # 0) Usuń wszystkie istniejące nagłówki GUI z wejścia
+            lines = [line for line in lines if line.strip() != header]
+
+            # 1) Usuń WSZYSTKIE linie z MOLTBOOK_API_KEY
+            #    oraz komentarze "#N - Nazwa" i stare "#N nazwa"
+            other_lines: list[str] = []
+            for line in lines:
+                stripped = line.strip()
+
+                # linie z kluczem Moltbook
+                if stripped.startswith("MOLTBOOK_API_KEY") or stripped.startswith("#MOLTBOOK_API_KEY"):
+                    continue
+
+                # nowe komentarze "#N - Nazwa"
+                if stripped.startswith("#") and "-" in stripped:
+                    left, _ = stripped[1:].split("-", 1)
+                    if left.strip().isdigit():
+                        continue
+
+                # stare komentarze "#N nazwa"
+                if stripped.startswith("#"):
+                    body = stripped[1:].strip()
+                    first_token = body.split(" ", 1)[0]
+                    if first_token.isdigit():
+                        continue
+
+                other_lines.append(line)
+
+            # 2) Z GUI zczytujemy sloty
+            multi_enabled = self.env_multi_key_checkbox.isChecked()
+            gui_slots = []
+            for w in self.env_moltbook_slots_widgets:
+                cb: QCheckBox = w["checkbox"]
+                label_edit: QLineEdit = w["label_edit"]
+                key_edit: QLineEdit = w["key_edit"]
+
+                gui_slots.append(
+                    {
+                        "label": label_edit.text().strip(),
+                        "value": key_edit.text().strip(),
+                        "active": cb.isChecked(),
+                    }
+                )
+
+            # single‑mode: wymuś dokładnie jeden active
+            if not multi_enabled and gui_slots:
+                checked_indices = [i for i, s in enumerate(gui_slots) if s["active"]]
+                if len(checked_indices) == 0:
+                    gui_slots[0]["active"] = True
+                elif len(checked_indices) > 1:
+                    first = checked_indices[0]
+                    for i in range(len(gui_slots)):
+                        gui_slots[i]["active"] = i == first
+
+            # 3) Zbuduj blok Moltbook
+            molt_lines: list[str] = []
+            counter = 1
+            for slot in gui_slots:
+                label = slot["label"].strip()
+                value = slot["value"].strip()
+                if not value:
+                    continue
+
+                if label:
+                    comment_text = f"#{counter} - {label}"
+                else:
+                    comment_text = f"#{counter} - Moltbook API key"
+                molt_lines.append(comment_text)
+
+                if slot["active"]:
+                    molt_lines.append(f"MOLTBOOK_API_KEY={value}")
+                else:
+                    molt_lines.append(f"#MOLTBOOK_API_KEY={value}")
+
+                molt_lines.append("")
+                counter += 1
+
+            if molt_lines and molt_lines[-1] == "":
+                molt_lines.pop()
+
+            # 4) OpenAI z pól GUI – nadpisz/uzupełnij
+            env_map: dict[str, str] = {}
+            for line in other_lines:
+                stripped = line.strip()
+                if stripped.startswith("#") or "=" not in stripped:
+                    continue
+                k, v = stripped.split("=", 1)
+                env_map[k.strip()] = v.strip()
+
+            key = self.env_openai_key_edit.text().strip()
+            if key:
+                env_map["OPENAI_API_KEY"] = key
+            model = self.env_openai_model_edit.text().strip()
+            if model:
+                env_map["OPENAI_MODEL"] = model
+
+            new_other_lines: list[str] = []
+            for line in other_lines:
+                stripped = line.strip()
+                if stripped.startswith("#") or "=" not in stripped:
+                    new_other_lines.append(line)
+                    continue
+                k, _ = stripped.split("=", 1)
+                k = k.strip()
+                if k in ("OPENAI_API_KEY", "OPENAI_MODEL"):
+                    continue
+                new_other_lines.append(line)
+
+            for k in ("OPENAI_API_KEY", "OPENAI_MODEL"):
+                if k in env_map:
+                    new_other_lines.append(f"{k}={env_map[k]}")
+
+            # 5) Finalny tekst: JEDEN nagłówek na górze, potem reszta i blok Moltbook
+            final_lines: list[str] = []
+            final_lines.append(header)
+            final_lines.append("")  # odstęp po nagłówku
+            final_lines.extend(new_other_lines)
+
+            if molt_lines:
+                if final_lines and final_lines[-1].strip() != "":
+                    final_lines.append("")
+                final_lines.extend(molt_lines)
+
+            # 6) Usunięcie nadmiarowych pustych linii
+            compact_lines: list[str] = []
+            blank_streak = 0
+            for line in final_lines:
+                if line.strip() == "":
+                    blank_streak += 1
+                    if blank_streak > 1:
+                        continue
+                else:
+                    blank_streak = 0
+                compact_lines.append(line)
+
+            final_text = "\n".join(compact_lines) + "\n"
+
             with open(ENV_FILE, "w", encoding="utf-8") as f:
-                f.write(text)
+                f.write(final_text)
 
             reload_env()
+            self.load_env_to_widget()
             QMessageBox.information(self, ".env", "Saved and reloaded .env.")
+
         except Exception as e:
             QMessageBox.critical(self, self.tr["error"], str(e))
+
+
+    def load_env_to_widget(self):
+        """
+        Wczytuje ENV_FILE do surowego edytora + buduje sloty Moltbook + OpenAI pola.
+        Bez dokładania extra pustych linii.
+        """
+        if not os.path.exists(ENV_FILE):
+            self.env_edit.setPlainText("")
+            self.rebuild_moltbook_slots_ui([])
+            self.env_openai_key_edit.setText("")
+            self.env_openai_model_edit.setText("")
+            return
+
+        try:
+            with open(ENV_FILE, "r", encoding="utf-8") as f:
+                text = f.read()
+
+            # surowy tekst 1:1
+            self.env_edit.setPlainText(text)
+
+            # sloty Moltbook (z nazwami z komentarzy, jeśli są)
+            slots_moltbook, _ = self.parse_env_api_slots(text)
+            self.rebuild_moltbook_slots_ui(slots_moltbook)
+
+            # OpenAI – proste mapowanie
+            env_lines = [
+                l.strip()
+                for l in text.splitlines()
+                if l.strip() and not l.strip().startswith("#")
+            ]
+            env_dict: dict[str, str] = {}
+            for line in env_lines:
+                if "=" in line:
+                    k, v = line.split("=", 1)
+                    env_dict[k.strip()] = v.strip()
+
+            self.env_openai_key_edit.setText(env_dict.get("OPENAI_API_KEY", ""))
+            self.env_openai_model_edit.setText(env_dict.get("OPENAI_MODEL", ""))
+
+        except Exception as e:
+            self.env_edit.setPlainText(str(e))
+
+
 
     # ---------- main manual action ----------
 
@@ -1322,12 +2040,63 @@ class Mbc20InscriptionGUI(QWidget):
                 f"and inscription: {inscription_json}"
             )
 
-            resp = moltbook_client.post_to_moltbook(
-                submolt=submolt,
-                title=title,
-                content=full_content,
-                log_fn=self.log,
-            )
+            # --- Moltbook auto‑retry na timeout/5xx ---
+
+            max_attempts = 1
+            interval_sec = 0.0
+
+            if getattr(self, "molt_auto_retry_checkbox", None) and self.molt_auto_retry_checkbox.isChecked():
+                try:
+                    interval_sec = float(self.molt_retry_interval_edit.text().strip() or "60")
+                except ValueError:
+                    interval_sec = 60.0
+                try:
+                    max_attempts = int(self.molt_retry_attempts_edit.text().strip() or "3")
+                    if max_attempts < 1:
+                        max_attempts = 1
+                except ValueError:
+                    max_attempts = 3
+
+            attempt = 0
+            resp = None
+            last_error = None
+
+            while attempt < max_attempts:
+                attempt += 1
+                try:
+                    self.log(f"Creating post (attempt {attempt}/{max_attempts})...")
+                    resp = moltbook_client.post_to_moltbook(
+                        submolt=submolt,
+                        title=title,
+                        content=full_content,
+                        log_fn=self.log,
+                    )
+                    break  # sukces
+                except requests.exceptions.ReadTimeout as e:
+                    last_error = e
+                    self.log(f"Timeout when creating post (attempt {attempt}): {e!r}")
+                except requests.exceptions.HTTPError as e:
+                    status = getattr(e.response, "status_code", None)
+                    if status is not None and 500 <= status < 600:
+                        last_error = e
+                        self.log(
+                            f"Server error {status} when creating post "
+                            f"(attempt {attempt}): {e!r}"
+                        )
+                    else:
+                        # 4xx (np. 400, 401, 429) – nie ma sensu retry
+                        raise
+                if attempt < max_attempts and interval_sec > 0:
+                    self.log(f"Retrying in {interval_sec:.0f} seconds...")
+                    QApplication.processEvents()
+                    time.sleep(interval_sec)
+
+            if resp is None:
+                # po wszystkich próbach – pokaż błąd użytkownikowi
+                raise RuntimeError(
+                    f"Failed to create post after {max_attempts} attempts: {last_error!r}"
+                )
+
             self.log(
                 f"Post response: {json.dumps(resp, indent=2, ensure_ascii=False)}"
             )
@@ -1425,6 +2194,76 @@ class Mbc20InscriptionGUI(QWidget):
             QMessageBox.critical(self, self.tr["error"], str(e))
             self.log(f"Error: {e!r}")
 
+    def on_add_moltbook_slot(self):
+        """
+        Dodaje nowy pusty slot API do listy (domyślnie nieaktywny).
+        """
+        # obecne sloty z GUI
+        slots = []
+        for w in self.env_moltbook_slots_widgets:
+            cb: QCheckBox = w["checkbox"]
+            label_edit: QLineEdit = w["label_edit"]
+            key_edit: QLineEdit = w["key_edit"]
+            meta = w["slot_meta"]
+
+            slots.append({
+                "line_index": meta.get("line_index", -1),
+                "raw_line": meta.get("raw_line", ""),
+                "active": cb.isChecked(),
+                "label": label_edit.text().strip(),
+                "value": key_edit.text().strip(),
+            })
+
+        # nowy pusty slot
+        new_slot = {
+            "line_index": -1,
+            "raw_line": "",
+            "active": False,
+            "label": "",
+            "value": "",
+        }
+        slots.append(new_slot)
+
+        self.rebuild_moltbook_slots_ui(slots)
+
+    def on_remove_moltbook_slot(self):
+        """
+        Usuwa zaznaczony slot API (albo ostatni, jeśli żaden nie jest zaznaczony).
+        """
+        if not self.env_moltbook_slots_widgets:
+            return
+
+        # znajdź zaznaczony slot
+        checked_indices = [
+            i for i, w in enumerate(self.env_moltbook_slots_widgets)
+            if w["checkbox"].isChecked()
+        ]
+
+        if checked_indices:
+            remove_index = checked_indices[0]
+        else:
+            remove_index = len(self.env_moltbook_slots_widgets) - 1
+
+        # zbuduj nową listę slotów bez tego jednego
+        slots = []
+        for idx, w in enumerate(self.env_moltbook_slots_widgets):
+            if idx == remove_index:
+                continue
+
+            cb: QCheckBox = w["checkbox"]
+            label_edit: QLineEdit = w["label_edit"]
+            key_edit: QLineEdit = w["key_edit"]
+            meta = w["slot_meta"]
+
+            slots.append({
+                "line_index": meta.get("line_index", -1),
+                "raw_line": meta.get("raw_line", ""),
+                "active": cb.isChecked(),
+                "label": label_edit.text().strip(),
+                "value": key_edit.text().strip(),
+            })
+
+        self.rebuild_moltbook_slots_ui(slots)
 
 def main():
     app = QApplication(sys.argv)
