@@ -166,6 +166,19 @@ LANG_STRINGS = {
         "env_openai_model_manual": "Manual model name (override)",
         "env_openai_model_combo": "Suggested models",
         "env_multi_key_label": "Unlock multi key support (Experimental!)",
+        "auto_use_only_llm": "Use only LLM for Auto‑Mint (skip rules/cache)",
+        "auto_use_only_llm_tooltip": (
+            "Auto‑Mint uses the token profile selected on the Main tab.\n"
+            "First choose and save the token profile on Main,\n"
+            "then enable this option if you want Auto‑Mint to use only LLM\n"
+            "(without rules/cache). The Main tab LLM setting does not affect Auto‑Mint."
+        ),
+                "auto_use_only_llm_help": (
+            "Auto‑Mint uses the token profile selected on the Main tab.\n"
+            "First choose and save the token profile on Main, then use this\n"
+            "checkbox to force LLM only for Auto‑Mint (independent from Main)."
+        ),
+
     },
     "pl": {
         "window_title": "Moltbook MBC-20 GUI Inskrypcje",
@@ -265,6 +278,21 @@ LANG_STRINGS = {
         "env_openai_model_manual": "Ręczna nazwa modelu (nadpisuje wybór)",
         "env_openai_model_combo": "Sugerowane modele",
         "env_multi_key_label": "Odblokuj obsługę wielu kluczy (Eksperymentalne!)",
+                "auto_use_only_llm": "Używaj tylko LLM dla Auto‑Mint (pomiń reguły/cache)",
+        "auto_use_only_llm_tooltip": (
+            "Auto‑Mint korzysta z profilu tokena wybranego na zakładce Główne.\n"
+            "Najpierw wybierz i zapisz profil tokena w zakładce Główne,\n"
+            "a następnie w zakładce Auto Mint włącz tę opcję,\n"
+            "jeśli chcesz wymusić użycie tylko LLM (bez reguł/cache).\n"
+            "Ustawienie LLM w zakładce Główne nie wpływa na Auto‑Mint."
+        ),
+                "auto_use_only_llm_help": (
+            "Auto‑Mint korzysta z profilu tokena wybranego na zakładce Główne.\n"
+            "Najpierw wybierz i zapisz profil tokena w zakładce Główne,\n"
+            "a następnie użyj tego checkboxa, aby wymusić tylko LLM dla Auto‑Mint\n"
+            "(niezależnie od ustawień na zakładce Główne)."
+        ),
+
     },
 }
 
@@ -776,10 +804,17 @@ class Mbc20InscriptionGUI(QWidget):
 
         # NEW: checkbox for Auto‑Mint solver behavior
         self.auto_use_only_llm_checkbox = QCheckBox(
-            "Use only LLM for Auto‑Mint (skip rules/cache)"
+            self.tr["auto_use_only_llm"]
         )
         self.auto_use_only_llm_checkbox.setChecked(True)
         auto_layout.addRow(self.auto_use_only_llm_checkbox)
+
+        # Label z opisem pod checkboxem
+        self.auto_use_only_llm_label = QLabel(
+            self.tr["auto_use_only_llm_help"]
+        )
+        self.auto_use_only_llm_label.setWordWrap(True)
+        auto_layout.addRow(self.auto_use_only_llm_label)
 
         self.update_fields_visibility(self.op_combo.currentText())
 
@@ -850,6 +885,16 @@ class Mbc20InscriptionGUI(QWidget):
         if hasattr(self, "molt_retry_attempts_label"):
             self.molt_retry_attempts_label.setText(self.tr["molt_retry_attempts"])
 
+        if hasattr(self, "auto_use_only_llm_checkbox"):
+            self.auto_use_only_llm_checkbox.setText(
+                self.tr["auto_use_only_llm"]
+            )
+
+        if hasattr(self, "auto_use_only_llm_label"):
+            self.auto_use_only_llm_label.setText(
+                self.tr["auto_use_only_llm_help"]
+            )
+
         # ENV tab labels
         if hasattr(self, "env_api_group_label"):
             self.env_api_group_label.setText(self.tr["env_api_config"])
@@ -857,6 +902,14 @@ class Mbc20InscriptionGUI(QWidget):
             self.env_openai_model_combo.setItemText(0, self.tr["env_openai_model_combo"])
         if hasattr(self, "env_multi_key_checkbox"):
             self.env_multi_key_checkbox.setText(self.tr["env_multi_key_label"])
+
+        if hasattr(self, "auto_use_only_llm_checkbox"):
+            self.auto_use_only_llm_checkbox.setText(
+                self.tr["auto_use_only_llm"]
+            )
+            self.auto_use_only_llm_checkbox.setToolTip(
+                self.tr["auto_use_only_llm_tooltip"]
+            )
 
         self.update_auto_description()
 
