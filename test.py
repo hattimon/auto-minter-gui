@@ -1805,24 +1805,22 @@ class Mbc20InscriptionGUI(QWidget):
                 if stripped.startswith("MOLTBOOK_API_KEY") or stripped.startswith("#MOLTBOOK_API_KEY"):
                     continue
 
-                # nowe komentarze opisowe "#N - Nazwa"
+                # nowe komentarze "#N - Nazwa"
                 if stripped.startswith("#") and "-" in stripped:
                     left, _ = stripped[1:].split("-", 1)
                     if left.strip().isdigit():
-                        # to jest "#N - ..." – pomijamy
                         continue
 
-                # STARE komentarze w formie "#N nazwa" (bez myślnika), np. "#1 serafinus"
+                # stare komentarze "#N nazwa"
                 if stripped.startswith("#"):
                     body = stripped[1:].strip()
                     first_token = body.split(" ", 1)[0]
                     if first_token.isdigit():
                         continue
 
-                # wszystko inne zostaje
                 other_lines.append(line)
 
-            # 2) Z GUI zczytujemy aktualny stan slotów
+            # 2) Z GUI zczytujemy sloty
             multi_enabled = self.env_multi_key_checkbox.isChecked()
             gui_slots = []
             for w in self.env_moltbook_slots_widgets:
@@ -1832,7 +1830,7 @@ class Mbc20InscriptionGUI(QWidget):
 
                 gui_slots.append(
                     {
-                        "label": label_edit.text().strip(),  # nazwa z GUI
+                        "label": label_edit.text().strip(),
                         "value": key_edit.text().strip(),
                         "active": cb.isChecked(),
                     }
@@ -1848,24 +1846,21 @@ class Mbc20InscriptionGUI(QWidget):
                     for i in range(len(gui_slots)):
                         gui_slots[i]["active"] = i == first
 
-            # 3) Zbuduj nowy blok Moltbook (komentarze + klucze)
+            # 3) Zbuduj blok Moltbook
             molt_lines: list[str] = []
             counter = 1
             for slot in gui_slots:
                 label = slot["label"].strip()
                 value = slot["value"].strip()
                 if not value:
-                    continue  # slot bez klucza pomijamy
+                    continue
 
-                # komentarz nad kluczem – używamy TYLKO tego, co jest w GUI
                 if label:
-                    # nowy format "#N - serafinus"
                     comment_text = f"#{counter} - {label}"
                 else:
                     comment_text = f"#{counter} - Moltbook API key"
                 molt_lines.append(comment_text)
 
-                # linia z kluczem
                 if slot["active"]:
                     molt_lines.append(f"MOLTBOOK_API_KEY={value}")
                 else:
@@ -1916,7 +1911,19 @@ class Mbc20InscriptionGUI(QWidget):
                     final_lines.append("")
                 final_lines.extend(molt_lines)
 
-            final_text = "\n".join(final_lines) + "\n"
+            # 6) Usunięcie nadmiarowych pustych linii (żeby nie rosła "poduszka" na górze)
+            compact_lines: list[str] = []
+            blank_streak = 0
+            for line in final_lines:
+                if line.strip() == "":
+                    blank_streak += 1
+                    if blank_streak > 1:
+                        continue  # pomijamy kolejne puste
+                else:
+                    blank_streak = 0
+                compact_lines.append(line)
+
+            final_text = "\n".join(compact_lines) + "\n"
 
             with open(ENV_FILE, "w", encoding="utf-8") as f:
                 f.write(final_text)
@@ -1932,49 +1939,44 @@ class Mbc20InscriptionGUI(QWidget):
     def load_env_to_widget(self):
         """
         Wczytuje ENV_FILE do surowego edytora + buduje sloty Moltbook + OpenAI pola.
+        Bez dokładania extra pustych linii.
         """
         if not os.path.exists(ENV_FILE):
             self.env_edit.setPlainText("")
-            # brak pliku – wyczyść sloty
-            if hasattr(self, "rebuild_moltbook_slots_ui"):
-                self.rebuild_moltbook_slots_ui([])
-            if hasattr(self, "env_openai_key_edit"):
-                self.env_openai_key_edit.setText("")
-            if hasattr(self, "env_openai_model_edit"):
-                self.env_openai_model_edit.setText("")
+            self.rebuild_moltbook_slots_ui([])
+            self.env_openai_key_edit.setText("")
+            self.env_openai_model_edit.setText("")
             return
 
         try:
             with open(ENV_FILE, "r", encoding="utf-8") as f:
                 text = f.read()
+
+            # surowy tekst 1:1
             self.env_edit.setPlainText(text)
 
-            # Moltbook slots
-            if hasattr(self, "parse_env_api_slots") and hasattr(
-                self, "rebuild_moltbook_slots_ui"
-            ):
-                slots_moltbook, _ = self.parse_env_api_slots(text)
-                self.rebuild_moltbook_slots_ui(slots_moltbook)
+            # sloty Moltbook (z nazwami z komentarzy, jeśli są)
+            slots_moltbook, _ = self.parse_env_api_slots(text)
+            self.rebuild_moltbook_slots_ui(slots_moltbook)
 
-            # OpenAI – proste mapowanie kluczy
+            # OpenAI – proste mapowanie
             env_lines = [
                 l.strip()
                 for l in text.splitlines()
                 if l.strip() and not l.strip().startswith("#")
             ]
-            env_dict = {}
+            env_dict: dict[str, str] = {}
             for line in env_lines:
                 if "=" in line:
                     k, v = line.split("=", 1)
                     env_dict[k.strip()] = v.strip()
 
-            if hasattr(self, "env_openai_key_edit"):
-                self.env_openai_key_edit.setText(env_dict.get("OPENAI_API_KEY", ""))
-            if hasattr(self, "env_openai_model_edit"):
-                self.env_openai_model_edit.setText(env_dict.get("OPENAI_MODEL", ""))
+            self.env_openai_key_edit.setText(env_dict.get("OPENAI_API_KEY", ""))
+            self.env_openai_model_edit.setText(env_dict.get("OPENAI_MODEL", ""))
 
         except Exception as e:
             self.env_edit.setPlainText(str(e))
+
 
 
     # ---------- main manual action ----------
