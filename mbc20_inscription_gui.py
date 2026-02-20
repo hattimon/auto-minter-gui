@@ -5,16 +5,19 @@ import json
 import random
 import string
 import time
-
-from lobster_solver import solve_lobster_challenge
-from typing import Optional
-
 from datetime import datetime
-import indexer_client
+from typing import Optional
 
 import requests
 from dotenv import load_dotenv
 
+from lobster_solver import solve_lobster_challenge
+import indexer_client
+import moltbook_client  # upewnij się że nazwa modułu jest poprawna
+from auto_minter import AutoMinter, AutoMintConfig
+
+from PyQt6.QtCore import Qt, QThread, pyqtSignal, QObject
+from PyQt6.QtGui import QPixmap, QTextCursor, QGuiApplication, QColor
 from PyQt6.QtWidgets import (
     QApplication,
     QWidget,
@@ -31,12 +34,6 @@ from PyQt6.QtWidgets import (
     QTabWidget,
     QCheckBox,
 )
-
-from PyQt6.QtGui import QTextCursor, QGuiApplication, QColor
-from PyQt6.QtCore import QThread, pyqtSignal, QObject
-
-import moltbook_client  # upewnij się że nazwa modułu jest poprawna
-from auto_minter import AutoMinter, AutoMintConfig
 
 
 MOLTBOOK_BASE_URL = "https://www.moltbook.com"
@@ -448,10 +445,27 @@ class Mbc20InscriptionGUI(QWidget):
         self.addr_edit = QLineEdit()
         self.addr_edit.setPlaceholderText("0xYourWalletAddress on Base")
 
+        # Post description + image layout
         self.description_edit = QTextEdit()
         self.description_edit.setPlaceholderText(
             "Optional post description. At the end the mbc-20 JSON and mbc20.xyz link will be added automatically."
         )
+
+        self.post_image_label = QLabel()
+        pix = QPixmap("logo.png")  # ścieżka do logo
+        if not pix.isNull():
+            pix = pix.scaled(
+                96,
+                96,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
+            self.post_image_label.setPixmap(pix)
+        self.post_image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        desc_layout = QHBoxLayout()
+        desc_layout.addWidget(self.post_image_label)
+        desc_layout.addWidget(self.description_edit)
 
         profile_layout = QHBoxLayout()
         self.profile_label = QLabel(self.tr["profiles_label"])
@@ -489,12 +503,18 @@ class Mbc20InscriptionGUI(QWidget):
         form.addRow(self.lim_label, self.lim_edit)
         form.addRow(self.to_label, self.to_edit)
         form.addRow(self.addr_label, self.addr_edit)
-        form.addRow(self.postdesc_label, self.description_edit)
+
+        # wiersz 1: sam napis "Post description"
+        form.addRow(self.postdesc_label, QWidget())
+        # wiersz 2: logo + pole opisu pod napisem
+        form.addRow(desc_layout)
+
         form.addRow(profile_layout)
 
         # dopiero gdy wszystkie pola istnieją:
         self.op_combo.currentTextChanged.connect(self.update_fields_visibility)
         self.update_fields_visibility(self.op_combo.currentText())
+
 
         # --- Solver (LLM) + Moltbook auto‑retry w dwóch kolumnach ---
 
