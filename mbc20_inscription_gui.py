@@ -1638,22 +1638,15 @@ class Mbc20InscriptionGUI(QWidget):
 
         return slots_moltbook, other_lines
 
-
     def rebuild_moltbook_slots_ui(self, slots_moltbook):
+        """
+        Buduje UI slotów Moltbook dokładnie na podstawie slots_moltbook
+        (label/value/active z pliku .env), bez prób zgadywania / przenoszenia
+        nazw pomiędzy slotami.
+        """
         layout = self.env_moltbook_slots_layout
         if layout is None:
             return
-
-        # zczytaj aktualne nazwy z GUI (jeśli już są)
-        existing_labels = []
-        if hasattr(self, "env_moltbook_slots_widgets"):
-            for w in self.env_moltbook_slots_widgets:
-                label_edit: QLineEdit = w["label_edit"]
-                key_edit: QLineEdit = w["key_edit"]
-                existing_labels.append({
-                    "value": key_edit.text().strip(),
-                    "label": label_edit.text().strip(),
-                })
 
         # wyczyść layout
         while layout.count():
@@ -1677,19 +1670,10 @@ class Mbc20InscriptionGUI(QWidget):
             for i in range(len(slots_moltbook)):
                 slots_moltbook[i]["active"] = (i == first_active_index)
 
+        # buduj UI 1:1 z slots_moltbook
         for slot in slots_moltbook:
             value = slot["value"]
-            label_from_parser = slot.get("label", "")
-
-            # spróbuj znaleźć istniejącą nazwę dla tego samego klucza
-            label_from_gui = ""
-            for e in existing_labels:
-                if e["value"] == value and e["label"]:
-                    label_from_gui = e["label"]
-                    break
-
-            # priorytet: GUI > nazwa z pliku > pusty string
-            label_final = label_from_gui or label_from_parser or ""
+            label = slot.get("label", "").strip()
 
             row_widget = QWidget()
             row_layout = QHBoxLayout(row_widget)
@@ -1699,7 +1683,7 @@ class Mbc20InscriptionGUI(QWidget):
             cb.setChecked(slot["active"])
             row_layout.addWidget(cb)
 
-            label_edit = QLineEdit(label_final)
+            label_edit = QLineEdit(label)
             label_edit.setPlaceholderText("API description (e.g. Key 1)")
             label_edit.setMinimumWidth(140)
             row_layout.addWidget(label_edit)
@@ -1711,17 +1695,18 @@ class Mbc20InscriptionGUI(QWidget):
             row_layout.addStretch()
             layout.addWidget(row_widget)
 
-            self.env_moltbook_slots_widgets.append({
-                "checkbox": cb,
-                "label_edit": label_edit,
-                "key_edit": key_edit,
-                "slot_meta": slot,
-            })
+            self.env_moltbook_slots_widgets.append(
+                {
+                    "checkbox": cb,
+                    "label_edit": label_edit,
+                    "key_edit": key_edit,
+                    "slot_meta": slot,
+                }
+            )
 
             cb.stateChanged.connect(self.on_moltbook_slot_checkbox_changed)
 
         self.apply_moltbook_slots_editability()
-
 
     def on_moltbook_slot_checkbox_changed(self, state: int):
         """
@@ -1841,7 +1826,7 @@ class Mbc20InscriptionGUI(QWidget):
             raw_text = self.env_edit.toPlainText()
             lines = raw_text.splitlines()
 
-            header = "### Edited by Moltbook MBC-20 Inscription GUI # Repo: https://github.com/hattimon/auto-minter-gui ###"
+            header = "### Edited by Moltbook MBC-20 Inscription GUI ### Repo: https://github.com/hattimon/auto-minter-gui ###"
 
             # 0) Usuń wszystkie istniejące nagłówki GUI z wejścia
             lines = [line for line in lines if line.strip() != header]
@@ -2244,7 +2229,6 @@ class Mbc20InscriptionGUI(QWidget):
             QMessageBox.critical(self, self.tr["error"], str(e))
             self.log(f"Error: {e!r}")
 
-
     def on_add_moltbook_slot(self):
         """
         Dodaje nowy pusty slot API do listy (domyślnie nieaktywny).
@@ -2257,13 +2241,15 @@ class Mbc20InscriptionGUI(QWidget):
             key_edit: QLineEdit = w["key_edit"]
             meta = w["slot_meta"]
 
-            slots.append({
-                "line_index": meta.get("line_index", -1),
-                "raw_line": meta.get("raw_line", ""),
-                "active": cb.isChecked(),
-                "label": label_edit.text().strip(),
-                "value": key_edit.text().strip(),
-            })
+            slots.append(
+                {
+                    "line_index": meta.get("line_index", -1),
+                    "raw_line": meta.get("raw_line", ""),
+                    "active": cb.isChecked(),
+                    "label": label_edit.text().strip(),
+                    "value": key_edit.text().strip(),
+                }
+            )
 
         # nowy pusty slot
         new_slot = {
