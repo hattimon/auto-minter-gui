@@ -434,7 +434,6 @@ class Mbc20InscriptionGUI(QWidget):
                 self.tr["op_link"],
             ]
         )
-        self.op_combo.currentTextChanged.connect(self.update_fields_visibility)
 
         self.tick_edit = QLineEdit()
         self.tick_edit.setPlaceholderText("Token ticker, 1-8 chars e.g. CLAW")
@@ -492,6 +491,10 @@ class Mbc20InscriptionGUI(QWidget):
         form.addRow(self.addr_label, self.addr_edit)
         form.addRow(self.postdesc_label, self.description_edit)
         form.addRow(profile_layout)
+
+        # dopiero gdy wszystkie pola istnieją:
+        self.op_combo.currentTextChanged.connect(self.update_fields_visibility)
+        self.update_fields_visibility(self.op_combo.currentText())
 
         # --- Solver (LLM) + Moltbook auto‑retry w dwóch kolumnach ---
 
@@ -800,7 +803,16 @@ class Mbc20InscriptionGUI(QWidget):
 
         self.auto_desc_label = QLabel()
         self.auto_desc_label.setWordWrap(True)
+        self.auto_desc_label.setStyleSheet(
+            "QLabel { "
+            "color: rgb(0, 0, 0); "
+            "background-color: rgb(255, 255, 224); "
+            "border: 1px solid rgb(220, 190, 60); "
+            "padding: 4px; "
+            "}"
+        )
         auto_layout.addRow(self.auto_desc_label)
+
 
         # NEW: checkbox for Auto‑Mint solver behavior
         self.auto_use_only_llm_checkbox = QCheckBox(
@@ -814,10 +826,10 @@ class Mbc20InscriptionGUI(QWidget):
             self.tr["auto_use_only_llm_help"]
         )
         self.auto_use_only_llm_label.setWordWrap(True)
+        self.auto_use_only_llm_label.setStyleSheet(
+            "QLabel { color: rgb(0, 160, 200); }"
+        )
         auto_layout.addRow(self.auto_use_only_llm_label)
-
-        self.update_fields_visibility(self.op_combo.currentText())
-
         
     # ---------- language ----------
 
