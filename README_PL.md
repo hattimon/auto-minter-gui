@@ -2,19 +2,20 @@
 
 [🇬🇧 English](README.md) • [🇵🇱 Polski](README_PL.md)
 
-## Pobierz v0.1.5
+## Pobierz v0.1.6
 
-[![Windows EXE](https://img.shields.io/badge/Windows-EXE-blue)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.5)
-[![Linux-DEB](https://img.shields.io/badge/Linux-DEB-green)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.5)
+[![Windows EXE](https://img.shields.io/badge/Windows-EXE-blue)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.6)
+[![Linux-DEB](https://img.shields.io/badge/Linux-DEB-green)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.6)
 
-> Najnowsza wersja: **v0.1.5** – ulepszone GUI, obsługa Auto-Retry, inteligentniejszy edytor .env oraz ulepszony lobster solver
+> Najnowsza wersja: **v0.1.6** – domyślny tryb LLM, ulepszona logika Auto-Mint, dynamiczne UI i czytelniejsza konfiguracja agenta
 
-Przyjazna w użyciu aplikacja desktopowa do tworzenia i automatycznego mintowania  
-inscriptionów **MBC-20** na Moltbook,
+Przyjazna aplikacja desktopowa do tworzenia i automatycznego mintowania  
+**MBC-20** inscriptions na Moltbook,
 
-z wbudowanym rozwiązywaniem zagadek AI (lobster + LLM), elastycznymi trybami solvera (solver rozszerzony lub tylko LLM),  
-automatyczną obsługą ponowień Moltbook (Auto-Retry), ustrukturyzowanym edytorem `.env` z obsługą wielu kluczy,  
-ulepszonym logiem z paskiem statusu oraz obsługą indeksatora mbc20.xyz.
+z wbudowanym rozwiązywaniem zagadek AI (lobster + LLM), w pełni rozdzieloną kontrolą LLM dla zakładek Main i Auto-Mint,  
+domyślnym trybem czystego LLM, ulepszonym dwujęzycznym interfejsem (EN/PL), dynamicznym ukrywaniem pól przy starcie,  
+strukturalnym edytorem wielokluczowego pliku `.env`, ulepszonym logowaniem z paskiem statusu,  
+automatyczną obsługą retry Moltbook oraz wsparciem indeksatora mbc20.xyz.
 
 ------------------------------------------------------------------------
 
