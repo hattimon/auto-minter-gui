@@ -1543,18 +1543,20 @@ class Mbc20InscriptionGUI(QWidget):
         slots_moltbook = []
         other_lines = []
 
-        # najpierw znajdź komentarze '#N nazwa'
-        name_by_index = {}  # indeks linii klucza -> nazwa
+        # najpierw znajdź komentarze "#N nazwa" (np. "#1 serafinus")
+        name_by_index: dict[int, str] = {}
         for idx, line in enumerate(lines):
             stripped = line.strip()
-            if stripped.startswith("#"):
-                body = stripped[1:].strip()
-                parts = body.split(" ", 1)
-                if len(parts) == 2 and parts[0].isdigit():
-                    # "#1 serafinus" -> index następnej linii dostanie nazwę
-                    next_idx = idx + 1
-                    if next_idx < len(lines):
-                        name_by_index[next_idx] = parts[1].strip()
+            if not stripped.startswith("#"):
+                continue
+
+            body = stripped[1:].strip()
+            parts = body.split(" ", 1)
+            if len(parts) == 2 and parts[0].isdigit():
+                # "#1 serafinus" → nazwę przypisz do następnej linii
+                next_idx = idx + 1
+                if next_idx < len(lines):
+                    name_by_index[next_idx] = parts[1].strip()
 
         for idx, line in enumerate(lines):
             stripped = line.strip()
@@ -1565,6 +1567,7 @@ class Mbc20InscriptionGUI(QWidget):
                 _, _, rhs = body.partition("=")
                 value = rhs.strip()
 
+                # label z komentarza "#N nazwa", jeśli jest
                 label = name_by_index.get(idx, "")
                 if not label:
                     # fallback, gdy nie ma komentarza
@@ -1573,13 +1576,15 @@ class Mbc20InscriptionGUI(QWidget):
                     else:
                         label = value[:8]
 
-                slots_moltbook.append({
-                    "line_index": idx,
-                    "raw_line": line,
-                    "active": active,
-                    "label": label,
-                    "value": value,
-                })
+                slots_moltbook.append(
+                    {
+                        "line_index": idx,
+                        "raw_line": line,
+                        "active": active,
+                        "label": label,
+                        "value": value,
+                    }
+                )
             else:
                 other_lines.append(line)
 
@@ -1792,7 +1797,7 @@ class Mbc20InscriptionGUI(QWidget):
 
             # 1) Usuń WSZYSTKIE linie z MOLTBOOK_API_KEY
             #    oraz komentarze "#N - Nazwa" i stare "#N nazwa"
-            other_lines = []
+            other_lines: list[str] = []
             for line in lines:
                 stripped = line.strip()
 
@@ -1807,12 +1812,11 @@ class Mbc20InscriptionGUI(QWidget):
                         # to jest "#N - ..." – pomijamy
                         continue
 
-                # STARE komentarze w formie "#N nazwa" (bez myślnika)
+                # STARE komentarze w formie "#N nazwa" (bez myślnika), np. "#1 serafinus"
                 if stripped.startswith("#"):
                     body = stripped[1:].strip()
                     first_token = body.split(" ", 1)[0]
                     if first_token.isdigit():
-                        # np. "#1 jeden" – też wyrzucamy
                         continue
 
                 # wszystko inne zostaje
@@ -1826,11 +1830,13 @@ class Mbc20InscriptionGUI(QWidget):
                 label_edit: QLineEdit = w["label_edit"]
                 key_edit: QLineEdit = w["key_edit"]
 
-                gui_slots.append({
-                    "label": label_edit.text().strip(),  # źródło prawdy dla nazwy
-                    "value": key_edit.text().strip(),
-                    "active": cb.isChecked(),
-                })
+                gui_slots.append(
+                    {
+                        "label": label_edit.text().strip(),  # nazwa z GUI
+                        "value": key_edit.text().strip(),
+                        "active": cb.isChecked(),
+                    }
+                )
 
             # single‑mode: wymuś dokładnie jeden active
             if not multi_enabled and gui_slots:
@@ -1840,10 +1846,10 @@ class Mbc20InscriptionGUI(QWidget):
                 elif len(checked_indices) > 1:
                     first = checked_indices[0]
                     for i in range(len(gui_slots)):
-                        gui_slots[i]["active"] = (i == first)
+                        gui_slots[i]["active"] = i == first
 
             # 3) Zbuduj nowy blok Moltbook (komentarze + klucze)
-            molt_lines = []
+            molt_lines: list[str] = []
             counter = 1
             for slot in gui_slots:
                 label = slot["label"].strip()
@@ -1853,6 +1859,7 @@ class Mbc20InscriptionGUI(QWidget):
 
                 # komentarz nad kluczem – używamy TYLKO tego, co jest w GUI
                 if label:
+                    # nowy format "#N - serafinus"
                     comment_text = f"#{counter} - {label}"
                 else:
                     comment_text = f"#{counter} - Moltbook API key"
@@ -1871,7 +1878,7 @@ class Mbc20InscriptionGUI(QWidget):
                 molt_lines.pop()
 
             # 4) OpenAI z pól GUI – nadpisz/uzupełnij
-            env_map = {}
+            env_map: dict[str, str] = {}
             for line in other_lines:
                 stripped = line.strip()
                 if stripped.startswith("#") or "=" not in stripped:
@@ -1886,7 +1893,7 @@ class Mbc20InscriptionGUI(QWidget):
             if model:
                 env_map["OPENAI_MODEL"] = model
 
-            new_other_lines = []
+            new_other_lines: list[str] = []
             for line in other_lines:
                 stripped = line.strip()
                 if stripped.startswith("#") or "=" not in stripped:
@@ -1920,6 +1927,7 @@ class Mbc20InscriptionGUI(QWidget):
 
         except Exception as e:
             QMessageBox.critical(self, self.tr["error"], str(e))
+
 
     def load_env_to_widget(self):
         """
