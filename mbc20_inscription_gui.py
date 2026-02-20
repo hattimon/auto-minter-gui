@@ -774,7 +774,15 @@ class Mbc20InscriptionGUI(QWidget):
         self.auto_desc_label.setWordWrap(True)
         auto_layout.addRow(self.auto_desc_label)
 
+        # NEW: checkbox for Auto‑Mint solver behavior
+        self.auto_use_only_llm_checkbox = QCheckBox(
+            "Use only LLM for Auto‑Mint (skip rules/cache)"
+        )
+        self.auto_use_only_llm_checkbox.setChecked(False)
+        auto_layout.addRow(self.auto_use_only_llm_checkbox)
+
         self.update_fields_visibility(self.op_combo.currentText())
+
         
     # ---------- language ----------
 
@@ -1064,20 +1072,32 @@ class Mbc20InscriptionGUI(QWidget):
         self,
         challenge: str,
         verification_code: Optional[str] = None,
+        *,
+        is_automint: bool = False,
     ) -> str:
         """
         Rozwiązuje zagadkę przez lobster_solver z trybem enhanced/LLM i auto‑retry.
         log_fn loguje tylko do pliku (bez Qt z wątku workera).
+
+        is_automint:
+            False  -> używa ustawień z głównej zakładki (checkboxy solvera).
+            True   -> może wymusić "only LLM" dla Auto‑Mint, jeśli zaznaczono
+                      auto_use_only_llm_checkbox.
         """
         # domyślnie: enhanced (reguły + cache)
         force_llm = False
 
-        # jeśli jest checkbox "use only LLM" i zaznaczony → wymuś czysty LLM
-        if hasattr(self, "use_only_llm_checkbox") and self.use_only_llm_checkbox.isChecked():
-            force_llm = True
-        elif hasattr(self, "use_enhanced_lobster_solver"):
-            # jeśli odznaczysz enhanced, przełącz na classic LLM
-            force_llm = not self.use_enhanced_lobster_solver.isChecked()
+        if is_automint and hasattr(self, "auto_use_only_llm_checkbox"):
+            # dla Auto‑Mint: jeżeli zaznaczono "Use only LLM for Auto‑Mint"
+            if self.auto_use_only_llm_checkbox.isChecked():
+                force_llm = True
+        else:
+            # tryb ręczny – jak wcześniej
+            if hasattr(self, "use_only_llm_checkbox") and self.use_only_llm_checkbox.isChecked():
+                force_llm = True
+            elif hasattr(self, "use_enhanced_lobster_solver"):
+                # jeśli odznaczysz enhanced, przełącz na classic LLM
+                force_llm = not self.use_enhanced_lobster_solver.isChecked()
 
         # tylko log do pliku – żadnego self.log (Qt)
         def log_fn(msg: str) -> None:
@@ -1092,7 +1112,6 @@ class Mbc20InscriptionGUI(QWidget):
             verification_code=verification_code,
         )
         return answer
-
 
     def send_verification(self, verification_code: str, answer: str):
         """
@@ -2183,7 +2202,9 @@ class Mbc20InscriptionGUI(QWidget):
             answer = self.solve_challenge_with_openai(
                 challenge_text,
                 verification_code=verification_code,
+                is_automint=True,
             )
+
             self.log(f"LLM answer (after a possible retry): {answer}")
 
             ok, verify_log = self.send_verification(verification_code, answer)
