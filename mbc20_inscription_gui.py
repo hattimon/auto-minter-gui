@@ -24,12 +24,14 @@ from PyQt6.QtWidgets import (
     QLabel,
     QLineEdit,
     QTextEdit,
+    QTextBrowser,
     QPushButton,
     QMessageBox,
     QComboBox,
     QTabWidget,
     QCheckBox,
 )
+
 from PyQt6.QtGui import QTextCursor, QGuiApplication, QColor
 from PyQt6.QtCore import QThread, pyqtSignal, QObject
 
@@ -525,8 +527,11 @@ class Mbc20InscriptionGUI(QWidget):
 
         self.log_label = QLabel(self.tr["log"])
         main_tab_layout.addWidget(self.log_label)
-        self.log_edit = QTextEdit()
+
+        # używamy QTextBrowser zamiast QTextEdit, żeby linki były klikalne
+        self.log_edit = QTextBrowser()
         self.log_edit.setReadOnly(True)
+        self.log_edit.setOpenExternalLinks(True)
         main_tab_layout.addWidget(self.log_edit)
 
         # HISTORY TAB
@@ -951,13 +956,33 @@ class Mbc20InscriptionGUI(QWidget):
     def log_post_published(self, post_id: str):
         """
         Zielony komunikat o opublikowanym poście z linkiem, w PL/EN.
+        Tutaj wstawiamy już HTML z <a href="...">, żeby QTextBrowser zrobił klikalny link.
         """
-        post_url = f"{MOLTBOOK_BASE_URL}/post/{post_id}"
+        post_url = moltbook_client.get_post_url(post_id)
+
         if self.current_lang == "pl":
-            msg = f"SUKCES: Post został pomyślnie opublikowany pod linkiem: {post_url}"
+            text = "SUKCES: Post został pomyślnie opublikowany pod linkiem: "
         else:
-            msg = f"SUCCESS: The post was successfully published at: {post_url}"
-        self.log(msg)
+            text = "SUCCESS: The post was successfully published at: "
+
+        # HTML: zielony tekst + klikalny <a href=...>
+        html = (
+            f'<span style="color:#4caf50;">'
+            f'{text}<a href="{post_url}">{post_url}</a>'
+            f"</span>"
+        )
+
+        from PyQt6.QtGui import QTextCursor  # upewniamy się, że jest import
+
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        full_html = f"[{timestamp}] {html}<br>"
+
+        cursor = self.log_edit.textCursor()
+        cursor.movePosition(QTextCursor.MoveOperation.End)
+        self.log_edit.setTextCursor(cursor)
+        self.log_edit.insertHtml(full_html)
+        self.log_edit.moveCursor(QTextCursor.MoveOperation.End)
+
 
     def append_log_from_thread(self, text: str):
         """
@@ -2008,7 +2033,6 @@ class Mbc20InscriptionGUI(QWidget):
             self.env_edit.setPlainText(str(e))
 
 
-
     # ---------- main manual action ----------
 
     def create_inscription_post(self):
@@ -2124,11 +2148,12 @@ class Mbc20InscriptionGUI(QWidget):
                 )
                 return
 
-            # NOWOŚĆ: zielony log z linkiem do posta (PL/EN)
+            # zielony log z linkiem do posta (PL/EN)
             self.log_post_published(post_id)
 
             post_url = moltbook_client.get_post_url(post_id)
             QGuiApplication.clipboard().setText(post_url)
+            self.log(f"Clipboard: {post_url}")
 
             verification = post_obj.get("verification") or {}
             verification_code = verification.get("verification_code")
@@ -2153,7 +2178,7 @@ class Mbc20InscriptionGUI(QWidget):
                 f"Challenge:\n{challenge_text}"
             )
 
-            # tutaj: solver z verification_code → w środku zrobi auto‑retry
+            # here: solver with verification_code → internal auto-retry
             answer = self.solve_challenge_with_openai(
                 challenge_text,
                 verification_code=verification_code,
@@ -2163,7 +2188,18 @@ class Mbc20InscriptionGUI(QWidget):
             ok, verify_log = self.send_verification(verification_code, answer)
             self.log(f"Verify result: {verify_log}")
 
-            if ok:
+            # specjalne traktowanie 409 Already answered jako „soft success”
+            is_already_answered = (
+                "Status 409" in verify_log and "Already answered" in verify_log
+            )
+
+            if ok or is_already_answered:
+                if is_already_answered:
+                    self.log(
+                        "Verification info: code already used – post is already verified "
+                        "or the challenge was solved earlier."
+                    )
+
                 QMessageBox.information(
                     self,
                     self.tr["post_verified"],
@@ -2173,10 +2209,10 @@ class Mbc20InscriptionGUI(QWidget):
                     ),
                 )
 
-                # dopiero po poprawnej weryfikacji – poczekaj 10 s i zindeksuj
+                # po poprawnej / soft-poprawnej weryfikacji – poczekaj 10 s i zindeksuj
                 self.log(
                     f"[INDEXER] Will index post_id={post_id} in 10 seconds "
-                    f"after successful verification."
+                    f"after verification (ok or already answered)."
                 )
                 QApplication.processEvents()
                 time.sleep(10.0)
