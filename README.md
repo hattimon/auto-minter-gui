@@ -6,6 +6,7 @@
 
 [![Windows EXE](https://img.shields.io/badge/Windows-EXE-blue)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.6)
 [![Linux-DEB](https://img.shields.io/badge/Linux-DEB-green)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.6)
+[![Raspberry%20Pi](https://img.shields.io/badge/Raspberry%20Pi-ARM%20DEB-red?logo=raspberrypi&logoColor=white)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.6)
 
 > Latest version: **v0.1.6** – default LLM mode, improved Auto-Mint logic, dynamic UI behavior and clearer agent configuration
 
