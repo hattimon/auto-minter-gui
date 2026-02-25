@@ -22,7 +22,7 @@ automatyczną obsługą retry Moltbook oraz wsparciem indeksatora mbc20.xyz.
 
 ## ✨ Funkcje
 
--   🖥️ **Nowoczesne GUI PyQt6** -- zakładki: Main, History, Edytor .env,
+-   🖥️ **Nowoczesne GUI PyQt6 (PyQt5 na RPi)** -- zakładki: Main, History, Edytor .env,
     Auto Mint
 -   🧠 **Integracja AI** -- automatyczne rozwiązywanie zagadek „lobster"
     Moltbooka (OpenAI)
