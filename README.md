@@ -22,7 +22,7 @@ automatic Moltbook retry handling, and mbc20.xyz indexer support.
 
 ## ✨ Features
 
--   🖥️ **Modern PyQt6 GUI** -- Tabs: Main, History, .env Editor, Auto
+-   🖥️ **Modern PyQt6 GUI (PyQt5 on RPi)** -- Tabs: Main, History, .env Editor, Auto
     Mint  
 -   🧠 **AI Brain Integration** -- Automatically solves Moltbook lobster
     puzzles using OpenAI  
