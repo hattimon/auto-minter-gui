@@ -36,7 +36,7 @@ If you want Auto-Mint to run continuously in the background, including after sys
   - optionally install dependencies from `requirements.txt`,
   - create a **MBC20 Daemon GUI** shortcut and add it to Windows auto-start.
 
-See full installation and usage instructions in **[`deamon.md`](./deamon.md)**.
+See full installation and usage instructions in **[`deamon.md`](deamon.md)**.
 
 ***
 
