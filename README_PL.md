@@ -2,21 +2,41 @@
 
 [🇬🇧 English](README.md) • [🇵🇱 Polski](README_PL.md)
 
-## Pobierz v0.1.6
+## Pobierz v0.1.7
 
-[![Windows EXE](https://img.shields.io/badge/Windows-EXE-blue)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.6)
-[![Linux-DEB](https://img.shields.io/badge/Linux-DEB-green)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.6)
-[![Raspberry%20Pi](https://img.shields.io/badge/Raspberry%20Pi-ARM%20DEB-red?logo=raspberrypi&logoColor=white)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.6)
+[![Windows EXE](https://img.shields.io/badge/Windows-EXE-blue)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.7)
+[![Linux-DEB](https://img.shields.io/badge/Linux-DEB-green)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.7) *(soon)*
+[![Raspberry%20Pi](https://img.shields.io/badge/Raspberry%20Pi-ARM%20DEB-red?logo=raspberrypi&logoColor=white)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.7) *(soon)*
 
-> Najnowsza wersja: **v0.1.6** – domyślny tryb LLM, ulepszona logika Auto-Mint, dynamiczne UI i czytelniejsza konfiguracja agenta
+> Najnowsza wersja: **v0.1.7** – daemon MBC20 w tle, współdzielone ustawienia i logi, automatyczne indeksowanie oraz opcjonalny instalator autostartu dla Windows
 
 Przyjazna aplikacja desktopowa do tworzenia i automatycznego mintowania  
-**MBC-20** inscriptions na Moltbook,
+**MBC-20** na Moltbook,
 
-z wbudowanym rozwiązywaniem zagadek AI (lobster + LLM), w pełni rozdzieloną kontrolą LLM dla zakładek Main i Auto-Mint,  
-domyślnym trybem czystego LLM, ulepszonym dwujęzycznym interfejsem (EN/PL), dynamicznym ukrywaniem pól przy starcie,  
-strukturalnym edytorem wielokluczowego pliku `.env`, ulepszonym logowaniem z paskiem statusu,  
-automatyczną obsługą retry Moltbook oraz wsparciem indeksatora mbc20.xyz.
+z wbudowanym rozwiązywaniem zagadek (lobster + LLM), pełnym rozdzieleniem sterowania LLM dla zakładki Głównej i Auto-Mint,  
+domyślnym trybem czystego LLM, rozbudowanym dwujęzycznym interfejsem (PL/EN), dynamicznym ukrywaniem pól formularza,  
+strukturalnym edytorem `.env` z obsługą wielu kluczy, ulepszonym logowaniem ze statusem,  
+automatycznym retry po błędach Moltbook oraz wsparciem indexera mbc20.xyz,  
+a także konfigurowalnym **daemonem MBC20**, który uruchamia auto-mint w tle, korzystając ze wspólnych profili i ustawień.
+
+***
+
+## Opcjonalnie: daemon MBC20 (Windows)
+
+Jeśli chcesz, aby Auto-Mint działał ciągle w tle, również po restartach systemu, możesz zainstalować opcjonalny **daemon MBC20**.
+
+- Daemon korzysta z tych samych plików co główne GUI:
+  - `mbc20_profiles.json`, `mbc20_daemon_settings.json`, `mbc20_history.log`.
+- Osobne **GUI daemona** umożliwia konfigurację:
+  - profilu tokena, `first_start_minutes`, `base_interval_minutes`,
+  - interwałów retry dla błędów Moltbook 5xx i stałego backoffu dla innych błędów,
+  - języka oraz opcji „Włącz daemona przy starcie”.
+- Interaktywny instalator PowerShell:
+  - pobiera wszystkie pliki Pythona daemona do katalogu projektu,
+  - opcjonalnie instaluje zależności z `requirements.txt`,
+  - tworzy skrót **MBC20 Daemon GUI** i dodaje go do autostartu Windows.
+
+Szczegółowa instrukcja znajduje się w pliku **[`deamon.md`](./deamon.md)**.
 
 ------------------------------------------------------------------------
 
