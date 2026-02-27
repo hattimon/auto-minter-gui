@@ -6,10 +6,19 @@ $ErrorActionPreference = "Stop"
 
 Write-Host "Select installer language / Wybierz jezyk instalatora:"
 Write-Host "  1) English"
-Write-Host "  2) Polski (bez ogonkow)"
+Write-Host "  2) Polski"
 $choice = Read-Host "[1/2]"
 
 if ($choice -eq "2") { $LANG = "pl" } else { $LANG = "en" }
+
+# Ask if user wants fully automatic "yes to everything"
+if ($LANG -eq "pl") {
+    $autoYesQuestion = "Ustaw tryb automatyczny? (Y = tak na wszystkie pytania) [y/N]"
+} else {
+    $autoYesQuestion = "Enable automatic mode? (Y = yes to all questions) [y/N]"
+}
+$autoYesAnswer = Read-Host $autoYesQuestion
+$AUTO_YES = $autoYesAnswer -match "^[Yy]"
 
 function Msg {
     param([string]$Key)
@@ -163,10 +172,14 @@ else  { $winFamily = "other" }
 Write-Host ([string]::Format((Msg "win_family"), $winFamily))
 Write-Host ""
 
-$questionOs = [string]::Format((Msg "confirm_os"), $caption)
-$answer = Read-Host $questionOs
-if ($answer -match "^[nN]") {
-    $winFamily = Read-Host (Msg "enter_win")
+if (-not $AUTO_YES) {
+    $questionOs = [string]::Format((Msg "confirm_os"), $caption)
+    $answer = Read-Host $questionOs
+    if ($answer -match "^[nN]") {
+        $winFamily = Read-Host (Msg "enter_win")
+    }
+} else {
+    Write-Host "(auto) OS confirmation: YES"
 }
 Write-Host ""
 
@@ -184,10 +197,14 @@ $projectDir = Get-Location
 Write-Host ([string]::Format((Msg "project_dir"), $projectDir))
 Write-Host ""
 
-$confirm = Read-Host (Msg "confirm_install_here")
-if ($confirm -match "^[nN]") {
-    Write-Host (Msg "aborted") -ForegroundColor Yellow
-    exit 0
+if (-not $AUTO_YES) {
+    $confirm = Read-Host (Msg "confirm_install_here")
+    if ($confirm -match "^[nN]") {
+        Write-Host (Msg "aborted") -ForegroundColor Yellow
+        exit 0
+    }
+} else {
+    Write-Host "(auto) Install here: YES"
 }
 
 $filesToDownload = @(
@@ -206,10 +223,14 @@ foreach ($f in $filesToDownload) {
 }
 Write-Host ""
 
-$confirm = Read-Host (Msg "proceed_download")
-if ($confirm -match "^[nN]") {
-    Write-Host (Msg "aborted") -ForegroundColor Yellow
-    exit 0
+if (-not $AUTO_YES) {
+    $confirm = Read-Host (Msg "proceed_download")
+    if ($confirm -match "^[nN]") {
+        Write-Host (Msg "aborted") -ForegroundColor Yellow
+        exit 0
+    }
+} else {
+    Write-Host "(auto) Download files: YES"
 }
 
 foreach ($f in $filesToDownload) {
@@ -228,8 +249,15 @@ Write-Host ([string]::Format((Msg "download_ok"), $projectDir)) -ForegroundColor
 Write-Host ""
 
 if (Test-Path (Join-Path $projectDir "requirements.txt")) {
-    $installDeps = Read-Host (Msg "install_deps_q")
-    if ($installDeps -notmatch "^[nN]") {
+    if (-not $AUTO_YES) {
+        $installDeps = Read-Host (Msg "install_deps_q")
+        $doDeps = $installDeps -notmatch "^[nN]"
+    } else {
+        Write-Host "(auto) Install dependencies: YES"
+        $doDeps = $true
+    }
+
+    if ($doDeps) {
         Write-Host ""
         Write-Host (Msg "installing_deps") -ForegroundColor Yellow
         python -m pip install --upgrade pip
@@ -239,10 +267,14 @@ if (Test-Path (Join-Path $projectDir "requirements.txt")) {
     }
 }
 
-$addShortcut = Read-Host (Msg "shortcut_q")
-if ($addShortcut -match "^[nN]") {
-    Write-Host (Msg "skip_shortcut")
-    exit 0
+if (-not $AUTO_YES) {
+    $addShortcut = Read-Host (Msg "shortcut_q")
+    if ($addShortcut -match "^[nN]") {
+        Write-Host (Msg "skip_shortcut")
+        exit 0
+    }
+} else {
+    Write-Host "(auto) Create shortcut + autostart: YES"
 }
 
 $pythonPath = (Get-Command python).Source
@@ -251,8 +283,14 @@ $pythonw    = Join-Path $pythonDir "pythonw.exe"
 
 if (-not (Test-Path $pythonw)) {
     Write-Host (Msg "pythonw_missing_auto") -ForegroundColor Yellow
-    $pythonw = Read-Host (Msg "enter_pythonw")
+    if (-not $AUTO_YES) {
+        $pythonw = Read-Host (Msg "enter_pythonw")
+    } else {
+        Write-Host "pythonw.exe not found and auto mode is on -> aborting."
+        exit 1
+    }
 }
+
 if (-not (Test-Path $pythonw)) {
     Write-Host (Msg "pythonw_not_found") -ForegroundColor Red
     exit 1
@@ -276,7 +314,7 @@ $shortcutPathProject = Join-Path $projectDir "MBC20 Daemon GUI.lnk"
 $shortcut = $WScriptShell.CreateShortcut($shortcutPathProject)
 $shortcut.TargetPath = $pythonw
 $shortcut.Arguments  = "`"$daemonGuiPath`""
-$shortcut.WorkingDirectory = $projectDir
+$shortcut.WorkingDirectory = $projectDir.Path
 $shortcut.WindowStyle = 1
 $shortcut.IconLocation = $pythonw
 $shortcut.Save()
