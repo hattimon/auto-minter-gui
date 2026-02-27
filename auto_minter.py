@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import json
 import time
 from dataclasses import dataclass
@@ -281,3 +280,44 @@ class AutoMinter:
             self._sleep_with_check(self.current_interval)
 
         self.log(f"[AUTO-MINT] Stopped. Total runs: {runs_done}")
+
+
+# --------------- Daemon helper API ---------------
+
+def run_auto_mint_once(
+    solve_fn,
+    verify_fn,
+    config: AutoMintConfig,
+    log_fn=None,
+    build_title_fn=None,
+    get_description_fn=None,
+) -> tuple[bool, str | None]:
+    """
+    Helper dla daemona.
+
+    - Używa istniejącej klasy AutoMinter oraz metody _one_mint().
+    - Wykonuje dokładnie jedno podejście mintowania (jedno POST do Moltbooka + verify + indexer).
+    - Nie uruchamia run_loop i nie zmienia globalnego stanu GUI.
+    - Zwraca:
+        (True, None)            – sukces,
+        (False, "moltbook_5xx") – HTTP 5xx z Moltbooka,
+        (False, "other")        – inne błędy.
+    """
+    am = AutoMinter(
+        solve_fn=solve_fn,
+        verify_fn=verify_fn,
+        config=config,
+        log_fn=log_fn,
+        stop_flag_fn=lambda: False,
+        build_title_fn=build_title_fn,
+        get_description_fn=get_description_fn,
+    )
+
+    try:
+        am._one_mint()
+        return True, None
+    except Exception as e:
+        msg = str(e)
+        if "status 5" in msg or " 5xx" in msg:
+            return False, "moltbook_5xx"
+        return False, "other"
