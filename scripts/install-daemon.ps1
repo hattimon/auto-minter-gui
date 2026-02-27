@@ -1,3 +1,11 @@
+
+***
+
+## `scripts/install-daemon.ps1` (gotowy plik)
+
+Zapisz dokładnie ten plik w katalogu `scripts/install-daemon.ps1` w repo; `RepoBaseUrl` już wskazuje na gałąź `main` w root.
+
+```powershell
 <#
     install-daemon.ps1
     Interaktywny instalator MBC20 Daemon dla Windows (7/8/10/11)
@@ -161,9 +169,7 @@ Write-Host ("  " + (Msg "title"))
 Write-Host "══════════════════════════════════════════════════════"
 Write-Host ""
 
-# ──────────────────────────────────────────────────────
-# 1. Wykrycie wersji Windows
-# ──────────────────────────────────────────────────────
+# 1. OS
 $os = Get-CimInstance Win32_OperatingSystem
 $caption = $os.Caption
 $version = $os.Version
@@ -191,9 +197,7 @@ if ($answer -match "^[nN]") {
 }
 Write-Host ""
 
-# ──────────────────────────────────────────────────────
-# 2. Sprawdzenie Pythona
-# ──────────────────────────────────────────────────────
+# 2. Python
 Write-Host (Msg "python_check")
 if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
     Write-Host (Msg "python_missing") -ForegroundColor Red
@@ -204,9 +208,7 @@ $pyVersion = & python -c "import sys; print('.'.join(map(str, sys.version_info[:
 Write-Host ([string]::Format((Msg "python_version"), $pyVersion))
 Write-Host ""
 
-# ──────────────────────────────────────────────────────
-# 3. Katalog projektu
-# ──────────────────────────────────────────────────────
+# 3. Project dir
 $projectDir = Get-Location
 Write-Host ([string]::Format((Msg "project_dir"), $projectDir))
 Write-Host ""
@@ -217,10 +219,7 @@ if ($confirm -match "^[nN]") {
     exit 0
 }
 
-# ──────────────────────────────────────────────────────
-# 4. Lista plików do pobrania
-# ──────────────────────────────────────────────────────
-# UWAGA: dostosuj ścieżki do swojego repo (gałąź / katalog)!
+# 4. Files to download
 $filesToDownload = @(
     @{
         Name = "mbc20_auto_daemon.py"
@@ -248,9 +247,7 @@ if ($confirm -match "^[nN]") {
     exit 0
 }
 
-# ──────────────────────────────────────────────────────
-# 5. Pobieranie plików
-# ──────────────────────────────────────────────────────
+# 5. Download
 foreach ($f in $filesToDownload) {
     $targetPath = Join-Path $projectDir $f.Name
     Write-Host ([string]::Format((Msg "downloading"), $f.Name))
@@ -266,9 +263,7 @@ Write-Host ""
 Write-Host ([string]::Format((Msg "download_ok"), $projectDir)) -ForegroundColor Green
 Write-Host ""
 
-# ──────────────────────────────────────────────────────
-# 6. Instalacja zależności
-# ──────────────────────────────────────────────────────
+# 6. Deps
 if (Test-Path (Join-Path $projectDir "requirements.txt")) {
     $installDeps = Read-Host (Msg "install_deps_q")
     if ($installDeps -notmatch "^[nN]") {
@@ -281,9 +276,7 @@ if (Test-Path (Join-Path $projectDir "requirements.txt")) {
     }
 }
 
-# ──────────────────────────────────────────────────────
-# 7. Skrót GUI daemona + autostart
-# ──────────────────────────────────────────────────────
+# 7. Shortcut + autostart
 $addShortcut = Read-Host (Msg "shortcut_q")
 if ($addShortcut -match "^[nN]") {
     Write-Host (Msg "skip_shortcut")
