@@ -190,7 +190,7 @@ Write-Host ""
 
 $startupDir = [Environment]::GetFolderPath("Startup")
 if (-not (Test-Path $startupDir)) {
-    Write-Host (Msg "startup_not_found") -ForegroundColor Yellow
+    Write-Host "⚠ Startup folder not found, skipping autostart."
     Write-Host "  Startup: $startupDir"
 } else {
     $shortcutPathStartup = Join-Path $startupDir "MBC20 Daemon GUI.lnk"
