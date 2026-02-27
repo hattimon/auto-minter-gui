@@ -1,18 +1,4 @@
-<#
-    install-daemon.ps1
-    Interaktywny instalator MBC20 Daemon dla Windows (7/8/10/11)
-
-    Funkcje:
-    - wybór języka (PL / EN)
-    - wykrycie Windows / Python
-    - pobranie plików daemona + AutoMinter i modułów pomocniczych
-      z katalogu głównego repo do bieżącego folderu
-    - opcjonalna instalacja dependencies z requirements.txt
-    - utworzenie skrótu GUI daemona i dodanie go do autostartu
-#>
-
 param(
-    # Bazowy URL do katalogu głównego repo (gałąź main)
     [string]$RepoBaseUrl = "https://raw.githubusercontent.com/hattimon/auto-minter-gui/main"
 )
 
@@ -25,10 +11,10 @@ $choice = Read-Host "[1/2]"
 
 if ($choice -eq "2") { $LANG = "pl" } else { $LANG = "en" }
 
-function Msg($key) {
+function Msg {
     param([string]$Key)
     switch ($Key) {
-        "title" { if ($LANG -eq "pl") { "MBC20 Daemon – instalator (Windows)" } else { "MBC20 Daemon – installer (Windows)" } }
+        "title" { if ($LANG -eq "pl") { "MBC20 Daemon - instalator (Windows)" } else { "MBC20 Daemon - installer (Windows)" } }
         "detected_os" { if ($LANG -eq "pl") { "Wykryty system: {0} ({1})" } else { "Detected OS: {0} ({1})" } }
         "win_family" { if ($LANG -eq "pl") { "Rodzina Windows: {0}" } else { "Windows family: {0}" } }
         "confirm_os" { if ($LANG -eq "pl") { "Wykryto system '{0}'. Kontynuować z tym wykryciem? [Y/n]" } else { "Detected system '{0}'. Continue with this detection? [Y/n]" } }
@@ -107,7 +93,6 @@ if ($confirm -match "^[nN]") {
     exit 0
 }
 
-# pliki z root repo potrzebne daemonowi
 $filesToDownload = @(
     @{ Name = "mbc20_auto_daemon.py";       Url = "$RepoBaseUrl/mbc20_auto_daemon.py" },
     @{ Name = "mbc20_daemon_config_gui.py"; Url = "$RepoBaseUrl/mbc20_daemon_config_gui.py" },
