@@ -1,11 +1,3 @@
-
-***
-
-## `scripts/install-daemon.ps1` (gotowy plik)
-
-Zapisz dokładnie ten plik w katalogu `scripts/install-daemon.ps1` w repo; `RepoBaseUrl` już wskazuje na gałąź `main` w root.
-
-```powershell
 <#
     install-daemon.ps1
     Interaktywny instalator MBC20 Daemon dla Windows (7/8/10/11)
@@ -13,154 +5,59 @@ Zapisz dokładnie ten plik w katalogu `scripts/install-daemon.ps1` w repo; `Repo
     Funkcje:
     - wybór języka (PL / EN)
     - wykrycie Windows / Python
-    - pobranie plików daemona do bieżącego folderu
+    - pobranie plików daemona + AutoMinter i modułów pomocniczych
+      z katalogu głównego repo do bieżącego folderu
     - opcjonalna instalacja dependencies z requirements.txt
     - utworzenie skrótu GUI daemona i dodanie go do autostartu
 #>
 
 param(
+    # Bazowy URL do katalogu głównego repo (gałąź main)
     [string]$RepoBaseUrl = "https://raw.githubusercontent.com/hattimon/auto-minter-gui/main"
 )
 
 $ErrorActionPreference = "Stop"
 
-# ──────────────────────────────────────────────────────
-# 0. Wybór języka (PL / EN)
-# ──────────────────────────────────────────────────────
 Write-Host "Select installer language / Wybierz język instalatora:"
 Write-Host "  1) English"
 Write-Host "  2) Polski"
 $choice = Read-Host "[1/2]"
 
-if ($choice -eq "2") {
-    $LANG = "pl"
-} else {
-    $LANG = "en"
-}
+if ($choice -eq "2") { $LANG = "pl" } else { $LANG = "en" }
 
 function Msg($key) {
     param([string]$Key)
     switch ($Key) {
-        "title" {
-            if ($LANG -eq "pl") { "MBC20 Daemon – instalator (Windows)" }
-            else { "MBC20 Daemon – installer (Windows)" }
-        }
-        "detected_os" {
-            if ($LANG -eq "pl") { "Wykryty system: {0} ({1})" }
-            else { "Detected OS: {0} ({1})" }
-        }
-        "win_family" {
-            if ($LANG -eq "pl") { "Rodzina Windows: {0}" }
-            else { "Windows family: {0}" }
-        }
-        "confirm_os" {
-            if ($LANG -eq "pl") { "Wykryto system '{0}'. Kontynuować z tym wykryciem? [Y/n]" }
-            else { "Detected system '{0}'. Continue with this detection? [Y/n]" }
-        }
-        "enter_win" {
-            if ($LANG -eq "pl") { "Podaj wersję Windows ręcznie (7 / 8 / 10 / 11 / other)" }
-            else { "Enter Windows version manually (7 / 8 / 10 / 11 / other)" }
-        }
-        "python_check" {
-            if ($LANG -eq "pl") { "Sprawdzanie Pythona..." }
-            else { "Checking Python..." }
-        }
-        "python_missing" {
-            if ($LANG -eq "pl") { "❌ Nie znaleziono Pythona w PATH. Zainstaluj Python 3.10+ i upewnij się, że 'python' działa w terminalu. https://www.python.org/downloads/" }
-            else { "❌ Python not found in PATH. Install Python 3.10+ and ensure 'python' is available in PATH. https://www.python.org/downloads/" }
-        }
-        "python_version" {
-            if ($LANG -eq "pl") { "Wersja Pythona: {0}" }
-            else { "Python version: {0}" }
-        }
-        "project_dir" {
-            if ($LANG -eq "pl") { "Katalog projektu: {0}" }
-            else { "Project directory: {0}" }
-        }
-        "confirm_install_here" {
-            if ($LANG -eq "pl") { "Zainstalować pliki daemona w tym folderze? [Y/n]" }
-            else { "Install daemon files into this folder? [Y/n]" }
-        }
-        "aborted" {
-            if ($LANG -eq "pl") { "Przerwano." }
-            else { "Aborted." }
-        }
-        "files_to_download" {
-            if ($LANG -eq "pl") { "Pliki do pobrania:" }
-            else { "Files to download:" }
-        }
-        "proceed_download" {
-            if ($LANG -eq "pl") { "Kontynuować pobieranie? [Y/n]" }
-            else { "Proceed with download? [Y/n]" }
-        }
-        "downloading" {
-            if ($LANG -eq "pl") { "Pobieranie {0}..." }
-            else { "Downloading {0}..." }
-        }
-        "download_failed" {
-            if ($LANG -eq "pl") { "❌ Błąd pobierania {0}: {1}" }
-            else { "❌ Failed to download {0}: {1}" }
-        }
-        "download_ok" {
-            if ($LANG -eq "pl") { "✅ Pliki daemona pobrane do: {0}" }
-            else { "✅ Daemon files downloaded to: {0}" }
-        }
-        "install_deps_q" {
-            if ($LANG -eq "pl") { "Zainstalować/zaktualizować zależności z requirements.txt teraz? [Y/n]" }
-            else { "Install/update Python dependencies from requirements.txt now? [Y/n]" }
-        }
-        "installing_deps" {
-            if ($LANG -eq "pl") { "Instalowanie zależności..." }
-            else { "Installing dependencies..." }
-        }
-        "deps_ok" {
-            if ($LANG -eq "pl") { "✅ Zależności zainstalowane." }
-            else { "✅ Dependencies installed." }
-        }
-        "shortcut_q" {
-            if ($LANG -eq "pl") { "Utworzyć skrót GUI daemona i dodać go do autostartu Windows? [Y/n]" }
-            else { "Create shortcut for daemon GUI and add it to Windows autostart? [Y/n]" }
-        }
-        "skip_shortcut" {
-            if ($LANG -eq "pl") { "Pominięto tworzenie skrótu/autostartu." }
-            else { "Skipping shortcut/autostart setup." }
-        }
-        "pythonw_missing_auto" {
-            if ($LANG -eq "pl") { "Nie znaleziono pythonw.exe obok python.exe." }
-            else { "pythonw.exe not found next to python.exe." }
-        }
-        "enter_pythonw" {
-            if ($LANG -eq "pl") { "Podaj pełną ścieżkę do pythonw.exe (np. C:\Python312\pythonw.exe)" }
-            else { "Enter full path to pythonw.exe (e.g. C:\Python312\pythonw.exe)" }
-        }
-        "pythonw_not_found" {
-            if ($LANG -eq "pl") { "❌ Nie znaleziono pythonw.exe. Nie można stworzyć skrótu GUI." }
-            else { "❌ pythonw.exe not found. Cannot create GUI-only shortcut." }
-        }
-        "daemon_gui_missing" {
-            if ($LANG -eq "pl") { "❌ Nie znaleziono mbc20_daemon_config_gui.py w katalogu projektu." }
-            else { "❌ mbc20_daemon_config_gui.py not found in project directory." }
-        }
-        "shortcut_target" {
-            if ($LANG -eq "pl") { "Komenda skrótu:" }
-            else { "Shortcut target command:" }
-        }
-        "shortcut_created_project" {
-            if ($LANG -eq "pl") { "✅ Skrót utworzony w katalogu projektu:" }
-            else { "✅ Shortcut created in project folder:" }
-        }
-        "startup_not_found" {
-            if ($LANG -eq "pl") { "⚠ Nie znaleziono folderu autostartu użytkownika, pomijam autostart." }
-            else { "⚠ Startup folder not found for this user, skipping autostart." }
-        }
-        "shortcut_copied_startup" {
-            if ($LANG -eq "pl") { "✅ Skrót skopiowany do autostartu:" }
-            else { "✅ Shortcut copied to autostart:" }
-        }
-        "done" {
-            if ($LANG -eq "pl") { "Gotowe. Przy następnym logowaniu GUI daemona uruchomi się automatycznie. Pamiętaj, aby w GUI zaznaczyć 'Włącz daemona przy starcie'." }
-            else { "Done. On next login, the daemon GUI will start automatically. Remember to enable 'Start daemon at startup' in the GUI." }
-        }
+        "title" { if ($LANG -eq "pl") { "MBC20 Daemon – instalator (Windows)" } else { "MBC20 Daemon – installer (Windows)" } }
+        "detected_os" { if ($LANG -eq "pl") { "Wykryty system: {0} ({1})" } else { "Detected OS: {0} ({1})" } }
+        "win_family" { if ($LANG -eq "pl") { "Rodzina Windows: {0}" } else { "Windows family: {0}" } }
+        "confirm_os" { if ($LANG -eq "pl") { "Wykryto system '{0}'. Kontynuować z tym wykryciem? [Y/n]" } else { "Detected system '{0}'. Continue with this detection? [Y/n]" } }
+        "enter_win" { if ($LANG -eq "pl") { "Podaj wersję Windows ręcznie (7 / 8 / 10 / 11 / other)" } else { "Enter Windows version manually (7 / 8 / 10 / 11 / other)" } }
+        "python_check" { if ($LANG -eq "pl") { "Sprawdzanie Pythona..." } else { "Checking Python..." } }
+        "python_missing" { if ($LANG -eq "pl") { "❌ Nie znaleziono Pythona w PATH. Zainstaluj Python 3.10+ i upewnij się, że 'python' działa w terminalu. https://www.python.org/downloads/" } else { "❌ Python not found in PATH. Install Python 3.10+ and ensure 'python' is available in PATH. https://www.python.org/downloads/" } }
+        "python_version" { if ($LANG -eq "pl") { "Wersja Pythona: {0}" } else { "Python version: {0}" } }
+        "project_dir" { if ($LANG -eq "pl") { "Katalog projektu: {0}" } else { "Project directory: {0}" } }
+        "confirm_install_here" { if ($LANG -eq "pl") { "Zainstalować pliki daemona w tym folderze? [Y/n]" } else { "Install daemon files into this folder? [Y/n]" } }
+        "aborted" { if ($LANG -eq "pl") { "Przerwano." } else { "Aborted." } }
+        "files_to_download" { if ($LANG -eq "pl") { "Pliki do pobrania:" } else { "Files to download:" } }
+        "proceed_download" { if ($LANG -eq "pl") { "Kontynuować pobieranie? [Y/n]" } else { "Proceed with download? [Y/n]" } }
+        "downloading" { if ($LANG -eq "pl") { "Pobieranie {0}..." } else { "Downloading {0}..." } }
+        "download_failed" { if ($LANG -eq "pl") { "❌ Błąd pobierania {0}: {1}" } else { "❌ Failed to download {0}: {1}" } }
+        "download_ok" { if ($LANG -eq "pl") { "✅ Pliki daemona pobrane do: {0}" } else { "✅ Daemon files downloaded to: {0}" } }
+        "install_deps_q" { if ($LANG -eq "pl") { "Zainstalować/zaktualizować zależności z requirements.txt teraz? [Y/n]" } else { "Install/update Python dependencies from requirements.txt now? [Y/n]" } }
+        "installing_deps" { if ($LANG -eq "pl") { "Instalowanie zależności..." } else { "Installing dependencies..." } }
+        "deps_ok" { if ($LANG -eq "pl") { "✅ Zależności zainstalowane." } else { "✅ Dependencies installed." } }
+        "shortcut_q" { if ($LANG -eq "pl") { "Utworzyć skrót GUI daemona i dodać go do autostartu Windows? [Y/n]" } else { "Create shortcut for daemon GUI and add it to Windows autostart? [Y/n]" } }
+        "skip_shortcut" { if ($LANG -eq "pl") { "Pominięto tworzenie skrótu/autostartu." } else { "Skipping shortcut/autostart setup." } }
+        "pythonw_missing_auto" { if ($LANG -eq "pl") { "Nie znaleziono pythonw.exe obok python.exe." } else { "pythonw.exe not found next to python.exe." } }
+        "enter_pythonw" { if ($LANG -eq "pl") { "Podaj pełną ścieżkę do pythonw.exe (np. C:\Python312\pythonw.exe)" } else { "Enter full path to pythonw.exe (e.g. C:\Python312\pythonw.exe)" } }
+        "pythonw_not_found" { if ($LANG -eq "pl") { "❌ Nie znaleziono pythonw.exe. Nie można stworzyć skrótu GUI." } else { "❌ pythonw.exe not found. Cannot create GUI-only shortcut." } }
+        "daemon_gui_missing" { if ($LANG -eq "pl") { "❌ Nie znaleziono mbc20_daemon_config_gui.py w katalogu projektu." } else { "❌ mbc20_daemon_config_gui.py not found in project directory." } }
+        "shortcut_target" { if ($LANG -eq "pl") { "Komenda skrótu:" } else { "Shortcut target command:" } }
+        "shortcut_created_project" { if ($LANG -eq "pl") { "✅ Skrót utworzony w katalogu projektu:" } else { "✅ Shortcut created in project folder:" } }
+        "startup_not_found" { if ($LANG -eq "pl") { "⚠ Nie znaleziono folderu autostartu użytkownika, pomijam autostart." } else { "⚠ Startup folder not found for this user, skipping autostart." } }
+        "shortcut_copied_startup" { if ($LANG -eq "pl") { "✅ Skrót skopiowany do autostartu:" } else { "✅ Shortcut copied to autostart:" } }
+        "done" { if ($LANG -eq "pl") { "Gotowe. Przy następnym logowaniu GUI daemona uruchomi się automatycznie. Pamiętaj, aby w GUI zaznaczyć 'Włącz daemona przy starcie'." } else { "Done. On next login, the daemon GUI will start automatically. Remember to enable 'Start daemon at startup' in the GUI." } }
     }
 }
 
@@ -169,23 +66,16 @@ Write-Host ("  " + (Msg "title"))
 Write-Host "══════════════════════════════════════════════════════"
 Write-Host ""
 
-# 1. OS
 $os = Get-CimInstance Win32_OperatingSystem
 $caption = $os.Caption
 $version = $os.Version
 Write-Host ([string]::Format((Msg "detected_os"), $caption, $version))
 
-if ($caption -match "Windows 7") {
-    $winFamily = "7"
-} elseif ($caption -match "Windows 8") {
-    $winFamily = "8"
-} elseif ($caption -match "Windows 10") {
-    $winFamily = "10"
-} elseif ($caption -match "Windows 11") {
-    $winFamily = "11"
-} else {
-    $winFamily = "other"
-}
+if     ($caption -match "Windows 7")  { $winFamily = "7" }
+elseif ($caption -match "Windows 8")  { $winFamily = "8" }
+elseif ($caption -match "Windows 10") { $winFamily = "10" }
+elseif ($caption -match "Windows 11") { $winFamily = "11" }
+else  { $winFamily = "other" }
 
 Write-Host ([string]::Format((Msg "win_family"), $winFamily))
 Write-Host ""
@@ -197,7 +87,6 @@ if ($answer -match "^[nN]") {
 }
 Write-Host ""
 
-# 2. Python
 Write-Host (Msg "python_check")
 if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
     Write-Host (Msg "python_missing") -ForegroundColor Red
@@ -208,7 +97,6 @@ $pyVersion = & python -c "import sys; print('.'.join(map(str, sys.version_info[:
 Write-Host ([string]::Format((Msg "python_version"), $pyVersion))
 Write-Host ""
 
-# 3. Project dir
 $projectDir = Get-Location
 Write-Host ([string]::Format((Msg "project_dir"), $projectDir))
 Write-Host ""
@@ -219,20 +107,15 @@ if ($confirm -match "^[nN]") {
     exit 0
 }
 
-# 4. Files to download
+# pliki z root repo potrzebne daemonowi
 $filesToDownload = @(
-    @{
-        Name = "mbc20_auto_daemon.py"
-        Url  = "$RepoBaseUrl/mbc20_auto_daemon.py"
-    },
-    @{
-        Name = "mbc20_daemon_config_gui.py"
-        Url  = "$RepoBaseUrl/mbc20_daemon_config_gui.py"
-    },
-    @{
-        Name = "requirements.txt"
-        Url  = "$RepoBaseUrl/requirements.txt"
-    }
+    @{ Name = "mbc20_auto_daemon.py";       Url = "$RepoBaseUrl/mbc20_auto_daemon.py" },
+    @{ Name = "mbc20_daemon_config_gui.py"; Url = "$RepoBaseUrl/mbc20_daemon_config_gui.py" },
+    @{ Name = "auto_minter.py";            Url = "$RepoBaseUrl/auto_minter.py" },
+    @{ Name = "indexer_client.py";         Url = "$RepoBaseUrl/indexer_client.py" },
+    @{ Name = "lobster_solver.py";         Url = "$RepoBaseUrl/lobster_solver.py" },
+    @{ Name = "moltbook_client.py";        Url = "$RepoBaseUrl/moltbook_client.py" },
+    @{ Name = "requirements.txt";          Url = "$RepoBaseUrl/requirements.txt" }
 )
 
 Write-Host (Msg "files_to_download")
@@ -247,7 +130,6 @@ if ($confirm -match "^[nN]") {
     exit 0
 }
 
-# 5. Download
 foreach ($f in $filesToDownload) {
     $targetPath = Join-Path $projectDir $f.Name
     Write-Host ([string]::Format((Msg "downloading"), $f.Name))
@@ -263,7 +145,6 @@ Write-Host ""
 Write-Host ([string]::Format((Msg "download_ok"), $projectDir)) -ForegroundColor Green
 Write-Host ""
 
-# 6. Deps
 if (Test-Path (Join-Path $projectDir "requirements.txt")) {
     $installDeps = Read-Host (Msg "install_deps_q")
     if ($installDeps -notmatch "^[nN]") {
@@ -276,7 +157,6 @@ if (Test-Path (Join-Path $projectDir "requirements.txt")) {
     }
 }
 
-# 7. Shortcut + autostart
 $addShortcut = Read-Host (Msg "shortcut_q")
 if ($addShortcut -match "^[nN]") {
     Write-Host (Msg "skip_shortcut")
@@ -291,7 +171,6 @@ if (-not (Test-Path $pythonw)) {
     Write-Host (Msg "pythonw_missing_auto") -ForegroundColor Yellow
     $pythonw = Read-Host (Msg "enter_pythonw")
 }
-
 if (-not (Test-Path $pythonw)) {
     Write-Host (Msg "pythonw_not_found") -ForegroundColor Red
     exit 1
