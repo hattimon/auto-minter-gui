@@ -1,10 +1,11 @@
 #!/bin/bash
-# rpdaemon.sh - Moltbook MBC20 headless daemon manager v3
+# rpdaemon.sh - Moltbook MBC20 headless daemon manager v4
 # Pelna instalacja od A do Z: apt, venv, psutil, brak PyQt6,
-# fix profiles.json (format listy), fix start_daemon.sh, multi-folder
+# fix profiles.json (format listy), fix start_daemon.sh, multi-folder,
+# patch mbc20_auto_daemon.py (lockfile + load_dotenv(".env"))
 set -e
-RED="\033[31m"; GREEN="\033[32m"; YELLOW="\033[33m"
-CYAN="\033[36m"; MAGENTA="\033[35m"; BOLD="\033[1m"; RESET="\033[0m"
+RED="\\033[31m"; GREEN="\\033[32m"; YELLOW="\\033[33m"
+CYAN="\\033[36m"; MAGENTA="\\033[35m"; BOLD="\\033[1m"; RESET="\\033[0m"
 APP_USER="${SUDO_USER:-$USER}"
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_BASENAME="$(basename "${APP_DIR}")"
@@ -81,25 +82,57 @@ set_kv() {
   fi
 }
 
-# patch_daemon_lock: nadpisuje main() w mbc20_auto_daemon.py
-# tak, aby:
-# - nie blokowac startu przy istniejacym lockfile
-# - systemd pilnowal jednej instancji
-patch_daemon_lock() {
+# patch_daemon_script:
+# - nadpisuje main() bez blokady lockfile
+# - ustawia configure_moltbook_api() z load_dotenv(dotenv_path=".env", override=True)
+patch_daemon_script() {
   local script="${AUTO_DIR}/mbc20_auto_daemon.py"
   if [ ! -f "$script" ]; then
-    echo "  - pomijam patch lockfile: brak $script"
+    echo "  - pomijam patch daemona: brak $script"
     return 0
   fi
-  echo "  - patch mbc20_auto_daemon.py (main() bez blokady lockfile)..."
+  echo "  - patch mbc20_auto_daemon.py (main() + configure_moltbook_api)..."
   python3 - "$script" <<'PYEOF'
 import sys,re
 
 path = sys.argv[1]
 text = open(path, encoding="utf-8").read()
 
-# wytnij stary fragment od def main() do if __name__ == "__main__": main()
-pattern = r"def main\([\s\S]*?if __name__ == .__main__.:\s*\n\s*main\(\)\s*"
+# 1) Podmiana configure_moltbook_api()
+conf_pattern = r"def configure_moltbook_api\(\):[\s\S]*?^\s*[^ \t\n]"
+
+# nowa wersja funkcji z load_dotenv('.env', override=True)
+new_conf = '''
+def configure_moltbook_api():
+    load_dotenv(dotenv_path=".env", override=True)
+    api_key = os.getenv("MOLTBOOK_API_KEY")
+    if not api_key:
+        logger.error("MOLTBOOK_API_KEY is not set; aborting daemon run.")
+        raise RuntimeError("Missing MOLTBOOK_API_KEY")
+    moltbook_client.set_api_key(api_key)
+
+'''.lstrip()
+
+new_text, n_conf = re.subn(conf_pattern, new_conf, text, flags=re.MULTILINE)
+if n_conf == 0:
+    # fallback: jak nie znajdzie starej definicji, dopisujemy na koniec importow
+    if "def configure_moltbook_api()" not in new_text:
+        insert_pat = r"(from dotenv import load_dotenv[^\n]*\n)"
+        repl = r"\1\n" + new_conf
+        new_text, n_conf2 = re.subn(insert_pat, repl, new_text, count=1)
+        if n_conf2:
+            print("    Dodano configure_moltbook_api() po imporcie load_dotenv.")
+        else:
+            print("    Uwaga: nie udalo sie automatycznie wstrzyknac configure_moltbook_api().")
+    else:
+        print("    Uwaga: configure_moltbook_api() juz jest w pliku (niezmienione).")
+else:
+    print(f"    Podmieniono configure_moltbook_api() (wystapienia: {n_conf}).")
+
+text = new_text
+
+# 2) Podmiana main() (usun blokade lockfile, systemd pilnuje jednej instancji)
+pattern = r"def main\([\s\S]*?if __name__ == .__main__.:\\s*\\n\\s*main\(\)\\s*"
 
 new_main_block = '''
 def main():
@@ -134,12 +167,13 @@ if __name__ == "__main__":
     main()
 '''.strip()
 
-new_text, n = re.subn(pattern, new_main_block, text, flags=re.MULTILINE)
-if n == 0:
+new_text2, n_main = re.subn(pattern, new_main_block, text, flags=re.MULTILINE)
+if n_main == 0:
     print("    (Uwaga: nie znaleziono bloku main() do podmiany – sprawdz recznie.)")
 else:
-    print(f"    Podmieniono funkcje main() (wystapienia: {n}).")
-    open(path, "w", encoding="utf-8").write(new_text)
+    print(f"    Podmieniono funkcje main() (wystapienia: {n_main}).")
+
+open(path, "w", encoding="utf-8").write(new_text2)
 PYEOF
 }
 
@@ -159,8 +193,8 @@ install_headless() {
   # od razu popraw wlasciciela repo
   sudo chown -R "${APP_USER}:${APP_USER}" "${AUTO_DIR}" 2>/dev/null || true
 
-  # patch mbc20_auto_daemon.py (usun blokade lockfile i nadpisz main())
-  patch_daemon_lock
+  # patch mbc20_auto_daemon.py (lockfile + configure_moltbook_api)
+  patch_daemon_script
 
   cd "${AUTO_DIR}"
   if [ ! -d ".venv" ]; then
