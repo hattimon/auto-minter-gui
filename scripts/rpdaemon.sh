@@ -27,28 +27,28 @@ ENV_FILE="${AUTO_DIR}/.env"
 PROFILES_JSON="${AUTO_DIR}/mbc20_profiles.json"
 SETTINGS_JSON="${AUTO_DIR}/mbc20_daemon_settings.json"
 
-# ---------- Language strings ----------
 LANG="en"
 
+# ---------- Texts (no diacritics) ----------
 txt() {
   local key="$1"
   case "$LANG" in
     pl)
       case "$key" in
-        title) echo "Moltbook MBC20 Daemon – menedżer (folder: ${APP_BASENAME})";;
-        choose_lang) echo "Wybierz język:";;
+        title) echo "== Moltbook MBC20 Daemon menedzer (folder: ${APP_BASENAME}) ==";;
+        choose_lang) echo "Wybierz jezyk:";;
         lang_en) echo "1) English";;
         lang_pl) echo "2) Polski";;
-        main_menu) echo "Menu główne:";;
-        m_install) echo "1) Zainstaluj / odśwież daemon (headless)";;
+        main_menu) echo "Menu glowne:";;
+        m_install) echo "1) Zainstaluj / odswiez daemon (headless)";;
         m_add_profile) echo "2) Dodaj nowy profil tokena";;
         m_select_profile) echo "3) Wybierz aktywny profil tokena";;
-        m_logs) echo "4) Podgląd logów daemona";;
+        m_logs) echo "4) Podglad logow daemona";;
         m_env) echo "5) Edytuj plik .env (API)";;
-        m_autostart) echo "6) Włącz / wyłącz autostart daemona";;
-        m_reindex) echo "7) Reindeksuj z historii logów";;
-        m_exit) echo "8) Wyjście";;
-        prompt_choice) echo "Wybierz opcję";;
+        m_autostart) echo "6) Wlacz / wylacz autostart daemona";;
+        m_reindex) echo "7) Reindeksuj z historii logow";;
+        m_exit) echo "8) Wyjscie";;
+        prompt_choice) echo "Wybierz opcje";;
         installing) echo "Instalacja / aktualizacja headless daemona...";;
         done_ok) echo "Gotowe.";;
 
@@ -58,32 +58,31 @@ txt() {
 
         ask_profile_name) echo "Nazwa profilu (np. GPT-mint):";;
         ask_tick) echo "Ticker tokena (np. GPT):";;
-        ask_collection) echo "ID kolekcji / ticka (puste jeśli nie dotyczy):";;
-        ask_amount) echo "Ilość tokenów na jeden mint (np. 100):";;
-        ask_comment) echo "Dodatkowy komentarz do postów (puste = brak):";;
+        ask_collection) echo "ID kolekcji / ticka (puste jesli nie dotyczy):";;
+        ask_amount) echo "Ilosc tokenow na jeden mint (np. 100):";;
+        ask_comment) echo "Dodatkowy komentarz do postow (puste = brak):";;
 
-        profiles_missing) echo "Brak pliku profili, najpierw zainstaluj/utwórz profil.";;
-
-        select_profile_header) echo "Dostępne profile:";;
+        profiles_missing) echo "Brak pliku profili, najpierw zainstaluj/utworz profil.";;
+        select_profile_header) echo "Dostepne profile:";;
         select_profile_prompt) echo "Wybierz numer profilu:";;
 
         env_menu1) echo "1) Edytuj w edytorze (nano)";;
-        env_menu2) echo "2) Szybko zaktualizuj wartości";;
-        env_menu3) echo "3) Powrót";;
+        env_menu2) echo "2) Szybka aktualizacja wartosci";;
+        env_menu3) echo "3) Powrot";;
 
-        autostart_on) echo "Autostart jest WŁĄCZONY. Wyłączyć? (y/n)";;
-        autostart_off) echo "Autostart jest WYŁĄCZONY. Włączyć? (y/n)";;
-        autostart_now_on) echo "Autostart został włączony.";;
-        autostart_now_off) echo "Autostart został wyłączony.";;
+        autostart_on) echo "Autostart jest WLACZONY. Wylaczyc? (y/n)";;
+        autostart_off) echo "Autostart jest WYLACZONY. Wlaczyc? (y/n)";;
+        autostart_now_on) echo "Autostart zostal wlaczony.";;
+        autostart_now_off) echo "Autostart zostal wylaczony.";;
 
-        logs_info) echo "Podgląd logów (Ctrl+C aby wyjść):";;
-        reindex_info) echo "Reindeksacja z historii logów – uruchamiam...";;
-        reindex_stats) echo "Statystyki reindeksacji (do uzupełnienia przez Pythona).";;
+        logs_info) echo "Podglad logow (Ctrl+C aby wyjsc):";;
+        reindex_info) echo "Reindeksacja z historii logow - uruchamiam...";;
+        reindex_stats) echo "Statystyki reindeksacji (do uzupelnienia przez Pythona).";;
       esac
       ;;
     *)
       case "$key" in
-        title) echo "Moltbook MBC20 Daemon manager (folder: ${APP_BASENAME})";;
+        title) echo "== Moltbook MBC20 Daemon manager (folder: ${APP_BASENAME}) ==";;
         choose_lang) echo "Select language:";;
         lang_en) echo "1) English";;
         lang_pl) echo "2) Polski";;
@@ -111,13 +110,12 @@ txt() {
         ask_comment) echo "Extra comment in posts (empty = none):";;
 
         profiles_missing) echo "No profiles file, install/create profile first.";;
-
         select_profile_header) echo "Available profiles:";;
         select_profile_prompt) echo "Select profile number:";;
 
         env_menu1) echo "1) Edit in editor (nano)";;
         env_menu2) echo "2) Quick update values";;
-        env_menu3) echo "3) Back";;;
+        env_menu3) echo "3) Back";;
 
         autostart_on) echo "Autostart is ENABLED. Disable? (y/n)";;
         autostart_off) echo "Autostart is DISABLED. Enable? (y/n)";;
@@ -125,7 +123,7 @@ txt() {
         autostart_now_off) echo "Autostart has been disabled.";;
 
         logs_info) echo "Tailing logs (Ctrl+C to exit):";;
-        reindex_info) echo "Reindexing from history logs – running...";;
+        reindex_info) echo "Reindexing from history logs - running...";;
         reindex_stats) echo "Reindex stats (to be printed by Python script).";;
       esac
       ;;
@@ -150,23 +148,17 @@ choose_language() {
 install_headless() {
   echo -e "${YELLOW}$(txt installing)${RESET}"
 
-  # basic OS check (Debian/Ubuntu/Raspbian)
   if [ -f /etc/os-release ]; then
     . /etc/os-release
     case "$ID" in
-      debian|ubuntu|raspbian)
-        PKG_TOOL="apt"
-        ;;
-      *)
-        echo -e "${RED}Unsupported distro ID=$ID – script assumes Debian/Ubuntu/Raspbian.${RESET}"
-        ;;
+      debian|ubuntu|raspbian) ;;
+      *) echo -e "${RED}Unsupported distro ID=$ID (expected debian/ubuntu/raspbian).${RESET}";;
     esac
   fi
 
   sudo apt update
   sudo apt install -y git ${PYTHON_BIN} ${PYTHON_BIN}-venv jq
 
-  # clone/update repo
   if [ ! -d "${AUTO_DIR}" ]; then
     git clone "${REPO_URL}" "${AUTO_DIR}"
   else
@@ -183,12 +175,11 @@ install_headless() {
 
   source .venv/bin/activate
 
-  # headless deps ONLY – no PyQt6, no pip upgrade on old RPi:
+  # headless deps only – no PyQt6, no pip upgrade
   pip install python-dotenv requests
 
-  # .env
   if [ -f "$ENV_FILE" ]; then
-    echo -e "${GREEN}.env found – you can update values.${RESET}"
+    echo -e "${GREEN}.env found - you can update values.${RESET}"
   fi
 
   local NEW_MOLT NEW_OPENAI NEW_NAME
@@ -213,7 +204,6 @@ install_headless() {
   [ -n "$NEW_OPENAI" ] && set_kv "OPENAI_API_KEY" "$NEW_OPENAI"
   [ -n "$NEW_NAME" ] && set_kv "MOLTBOOK_API_NAME" "$NEW_NAME"
 
-  # default profile + settings if missing
   if [ ! -f "$PROFILES_JSON" ]; then
     add_profile
   fi
@@ -221,7 +211,6 @@ install_headless() {
   if [ ! -f "$SETTINGS_JSON" ]; then
     local PROFILE_NAME
     PROFILE_NAME=$(jq -r '.profiles[0].name' "$PROFILES_JSON")
-
     cat > "$SETTINGS_JSON" <<EOF
 {
   "profile_name": "${PROFILE_NAME}",
@@ -273,7 +262,6 @@ EOF
 add_profile() {
   mkdir -p "${AUTO_DIR}"
   touch "$PROFILES_JSON"
-
   if [ ! -s "$PROFILES_JSON" ]; then
     echo '{"profiles": []}' > "$PROFILES_JSON"
   fi
@@ -303,7 +291,7 @@ add_profile() {
   }]" "$PROFILES_JSON" > "$TMP"
   mv "$TMP" "$PROFILES_JSON"
 
-  echo -e "${GREEN}Profile added / Dodano profil: ${PROFILE_NAME}${RESET}"
+  echo -e "${GREEN}Profile added: ${PROFILE_NAME}${RESET}"
 }
 
 # ---------- Select active token profile ----------
@@ -321,7 +309,6 @@ select_profile() {
 
   mkdir -p "$(dirname "$SETTINGS_JSON")"
   touch "$SETTINGS_JSON"
-
   if [ ! -s "$SETTINGS_JSON" ]; then
     echo '{}' > "$SETTINGS_JSON"
   fi
@@ -331,7 +318,7 @@ select_profile() {
   mv "$TMP" "$SETTINGS_JSON"
 
   sudo systemctl restart "${SERVICE_NAME}" || true
-  echo -e "${GREEN}Active profile set to: ${PROFILE_NAME}${RESET}"
+  echo -e "${GREEN}Active profile: ${PROFILE_NAME}${RESET}"
 }
 
 # ---------- Edit .env ----------
@@ -419,10 +406,7 @@ reindex_history() {
   echo -e "${YELLOW}$(txt reindex_info)${RESET}"
   cd "${AUTO_DIR}"
   source .venv/bin/activate
-
-  # TODO: dopasuj do realnej komendy w repo:
-  ${PYTHON_BIN} indexer_client.py --reindex-from-history
-
+  python3 indexer_client.py --reindex-from-history
   echo -e "${GREEN}$(txt reindex_stats)${RESET}"
 }
 
@@ -433,14 +417,14 @@ main_menu() {
   while true; do
     echo
     echo -e "${BOLD}${CYAN}$(txt main_menu)${RESET}"
-    echo "$(txt m_install)"
-    echo "$(txt m_add_profile)"
-    echo "$(txt m_select_profile)"
-    echo "$(txt m_logs)"
-    echo "$(txt m_env)"
-    echo "$(txt m_autostart)"
-    echo "$(txt m_reindex)"
-    echo "$(txt m_exit)"
+    echo -e "${YELLOW}$(txt m_install)${RESET}"
+    echo -e "${YELLOW}$(txt m_add_profile)${RESET}"
+    echo -e "${YELLOW}$(txt m_select_profile)${RESET}"
+    echo -e "${YELLOW}$(txt m_logs)${RESET}"
+    echo -e "${YELLOW}$(txt m_env)${RESET}"
+    echo -e "${YELLOW}$(txt m_autostart)${RESET}"
+    echo -e "${YELLOW}$(txt m_reindex)${RESET}"
+    echo -e "${YELLOW}$(txt m_exit)${RESET}"
     echo
     read -p "$(txt prompt_choice): " choice
     case "$choice" in
