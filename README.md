@@ -53,8 +53,6 @@ If you want Auto-Mint to run continuously in the background, including after sys
 
 See full installation and usage instructions in **[`deamon.md`](deamon.md)**.
 
-***
-
 ------------------------------------------------------------------------
 
 ## ✨ Features
