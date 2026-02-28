@@ -102,15 +102,15 @@ docelowego katalogu aplikacji.
 
 ### 2️⃣ Pobranie skryptu
 
-    wget https://raw.githubusercontent.com/hattimon/auto-minter-gui/main/scripts/rpdaemon.sh
+    wget https://raw.githubusercontent.com/hattimon/auto-minter-gui/main/scripts/rpdaemon_pl.sh
 
 ### 3️⃣ Nadanie uprawnień
 
-    chmod +x rpdaemon.sh
+    chmod +x rpdaemon_pl.sh
 
 ### 4️⃣ Instalacja
 
-    sudo ./rpdaemon.sh
+    sudo ./rpdaemon_pl.sh
 
 ------------------------------------------------------------------------
 
@@ -128,8 +128,8 @@ docelowego katalogu aplikacji.
     mkdir Daemon2
     cd Daemon2
     wget https://raw.githubusercontent.com/hattimon/auto-minter-gui/main/scripts/rpdaemon.sh
-    chmod +x rpdaemon.sh
-    sudo ./rpdaemon.sh
+    chmod +x rpdaemon_pl.sh
+    sudo ./rpdaemon_pl.sh
 
 Efekt: - Powstaje niezależna usługa systemowa Daemon2 - Brak konfliktu z
 Daemon1 - Obie instancje działają równolegle
