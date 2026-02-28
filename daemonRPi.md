@@ -89,16 +89,16 @@ ps aux | grep mbc20_auto_daemon.py | grep -v grep
 
 ***
 
+# 🇵🇱 Wersja Polska
+
+<a id="polski"></a>
+
 # 🍓 daemonRPi -- Instalacja i konfiguracja (Wiele instancji)
 
 Skrypt instalacyjny:
 https://github.com/hattimon/auto-minter-gui/blob/main/scripts/rpdaemon_pl.sh   
 
 ![RPIdaemonPL.png](docs/screenshots/RPIdaemonPL.png)
-
-# 🇵🇱 Wersja Polska
-
-<a id="polski"></a>
 
 ## 🧠 Informacje
 
