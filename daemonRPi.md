@@ -3,6 +3,8 @@
 
 ---
 
+# 🇬🇧 English Version
+
 <a id="english"></a>
 
 # 🍓 daemonRPi – Installation and Configuration (Multi-Instance)
@@ -11,8 +13,6 @@ Installer script:
 https://github.com/hattimon/auto-minter-gui/blob/main/scripts/rpdaemon.sh   
 
 ![RPIdaemonEN.png](docs/screenshots/RPIdaemonEN.png)
-
-# 🇬🇧 English Version
 
 ## 🧠 Overview
 
@@ -96,9 +96,9 @@ https://github.com/hattimon/auto-minter-gui/blob/main/scripts/rpdaemon_pl.sh
 
 ![RPIdaemonPL.png](docs/screenshots/RPIdaemonPL.png)
 
-<a id="polski"></a>
-
 # 🇵🇱 Wersja Polska
+
+<a id="polski"></a>
 
 ## 🧠 Informacje
 
