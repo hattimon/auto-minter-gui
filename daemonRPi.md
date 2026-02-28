@@ -1,3 +1,63 @@
+# 🇬🇧 English Version
+
+## 🧠 Overview
+
+-   Tested on Raspberry Pi 3 (Raspbian Trixie -- headless)
+-   Works on Raspberry Pi 2 / 4 / Zero
+-   Low hardware requirements
+-   Supports multiple instances (Daemon1, Daemon2, etc.)
+-   Each folder creates its own system service
+-   No conflicts between instances
+
+------------------------------------------------------------------------
+
+# 📂 Install in Any Folder
+
+Do NOT clone the entire repository. Download only the script into your
+target application folder.
+
+------------------------------------------------------------------------
+
+## 🔹 Example -- First Instance (Daemon1)
+
+    mkdir Daemon1
+    cd Daemon1
+    wget https://raw.githubusercontent.com/hattimon/auto-minter-gui/main/scripts/rpdaemon.sh
+    chmod +x rpdaemon.sh
+    sudo ./rpdaemon.sh
+
+------------------------------------------------------------------------
+
+## 🔁 Second Instance (Daemon2)
+
+    mkdir Daemon2
+    cd Daemon2
+    wget https://raw.githubusercontent.com/hattimon/auto-minter-gui/main/scripts/rpdaemon.sh
+    chmod +x rpdaemon.sh
+    sudo ./rpdaemon.sh
+
+Result: - Independent system service named after folder - No service
+conflicts - Multiple daemons can run simultaneously
+
+------------------------------------------------------------------------
+
+# 🔍 Service Management Example (Daemon1)
+
+    sudo systemctl status Daemon1
+    sudo systemctl start Daemon1
+    sudo systemctl stop Daemon1
+    sudo systemctl restart Daemon1
+    journalctl -u Daemon1 -f
+
+------------------------------------------------------------------------
+
+# 🖥️ Runtime Mode
+
+-   OS: Raspbian (Trixie tested)
+-   Headless compatible
+-   SSH installation supported
+-   Runs fully in background
+
 # 🍓 daemonRPi -- Instalacja i konfiguracja (Multi-Instance)
 
 Skrypt instalacyjny:
@@ -99,64 +159,3 @@ Logi:
 -   Instalacja przez SSH możliwa
 -   Działa w tle jako daemon
 
-------------------------------------------------------------------------
-
-# 🇬🇧 English Version
-
-## 🧠 Overview
-
--   Tested on Raspberry Pi 3 (Raspbian Trixie -- headless)
--   Works on Raspberry Pi 2 / 4 / Zero
--   Low hardware requirements
--   Supports multiple instances (Daemon1, Daemon2, etc.)
--   Each folder creates its own system service
--   No conflicts between instances
-
-------------------------------------------------------------------------
-
-# 📂 Install in Any Folder
-
-Do NOT clone the entire repository. Download only the script into your
-target application folder.
-
-------------------------------------------------------------------------
-
-## 🔹 Example -- First Instance (Daemon1)
-
-    mkdir Daemon1
-    cd Daemon1
-    wget https://raw.githubusercontent.com/hattimon/auto-minter-gui/main/scripts/rpdaemon.sh
-    chmod +x rpdaemon.sh
-    sudo ./rpdaemon.sh
-
-------------------------------------------------------------------------
-
-## 🔁 Second Instance (Daemon2)
-
-    mkdir Daemon2
-    cd Daemon2
-    wget https://raw.githubusercontent.com/hattimon/auto-minter-gui/main/scripts/rpdaemon.sh
-    chmod +x rpdaemon.sh
-    sudo ./rpdaemon.sh
-
-Result: - Independent system service named after folder - No service
-conflicts - Multiple daemons can run simultaneously
-
-------------------------------------------------------------------------
-
-# 🔍 Service Management Example (Daemon1)
-
-    sudo systemctl status Daemon1
-    sudo systemctl start Daemon1
-    sudo systemctl stop Daemon1
-    sudo systemctl restart Daemon1
-    journalctl -u Daemon1 -f
-
-------------------------------------------------------------------------
-
-# 🖥️ Runtime Mode
-
--   OS: Raspbian (Trixie tested)
--   Headless compatible
--   SSH installation supported
--   Runs fully in background
