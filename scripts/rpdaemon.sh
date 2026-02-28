@@ -117,7 +117,7 @@ txt() {
 
         env_menu1) echo "1) Edit in editor (nano)";;
         env_menu2) echo "2) Quick update values";;
-        env_menu3) echo "3) Back";;
+        env_menu3) echo "3) Back";;;
 
         autostart_on) echo "Autostart is ENABLED. Disable? (y/n)";;
         autostart_off) echo "Autostart is DISABLED. Enable? (y/n)";;
@@ -183,9 +183,7 @@ install_headless() {
 
   source .venv/bin/activate
 
-  # headless deps ONLY – bez PyQt6:
-  pip install --upgrade pip
-  # TODO: dopasuj do realnych zależności demona:
+  # headless deps ONLY – no PyQt6, no pip upgrade on old RPi:
   pip install python-dotenv requests
 
   # .env
@@ -201,7 +199,6 @@ install_headless() {
   touch "$ENV_FILE"
   cp "$ENV_FILE" "${ENV_FILE}.bak.$(date +%s)"
 
-  # minimal helper to set/update key
   set_kv() {
     local key="$1"
     local val="$2"
@@ -216,13 +213,12 @@ install_headless() {
   [ -n "$NEW_OPENAI" ] && set_kv "OPENAI_API_KEY" "$NEW_OPENAI"
   [ -n "$NEW_NAME" ] && set_kv "MOLTBOOK_API_NAME" "$NEW_NAME"
 
-  # domyślny profil + settings, jeśli brak
+  # default profile + settings if missing
   if [ ! -f "$PROFILES_JSON" ]; then
-    add_profile   # utworzy pierwszy profil
+    add_profile
   fi
 
   if [ ! -f "$SETTINGS_JSON" ]; then
-    # domyślne ustawienia jak w GUI (1 / 35 / 1 / 31, LLM only itd.)
     local PROFILE_NAME
     PROFILE_NAME=$(jq -r '.profiles[0].name' "$PROFILES_JSON")
 
@@ -241,7 +237,6 @@ install_headless() {
 EOF
   fi
 
-  # start script
   cat > "${APP_DIR}/start_daemon.sh" <<EOF
 #!/bin/bash
 cd "${AUTO_DIR}"
@@ -250,7 +245,6 @@ ${PYTHON_BIN} auto_minter.py --daemon >> "${LOG_FILE}" 2>&1
 EOF
   chmod +x "${APP_DIR}/start_daemon.sh"
 
-  # systemd unit
   local SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
   sudo bash -c "cat > '${SERVICE_FILE}'" <<EOF
 [Unit]
@@ -295,10 +289,8 @@ add_profile() {
   echo -e "${CYAN}$(txt ask_comment)${RESET}"
   read -p "> " EXTRA_COMMENT
 
-  # losowy 10-znakowy identyfikator do nagłówków
   RAND_ID=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c10)
 
-  # dopasuj pola do realnego JSON w projekcie:
   TMP=$(mktemp)
   jq ".profiles += [{
     \"name\": \"${PROFILE_NAME}\",
@@ -371,7 +363,7 @@ edit_env() {
       set_kv_env() {
         local key="$1"
         local val="$2"
-        if [ -z "$val" ]; then return; fi
+        [ -z "$val" ] && return
         if grep -q "^${key}=" "$ENV_FILE"; then
           sed -i "s/^${key}=.*/${key}=${val}/" "$ENV_FILE"
         else
@@ -422,20 +414,21 @@ tail_logs() {
   tail -f "$LOG_FILE"
 }
 
-# ---------- Reindex (placeholder -> Python) ----------
+# ---------- Reindex (placeholder) ----------
 reindex_history() {
   echo -e "${YELLOW}$(txt reindex_info)${RESET}"
   cd "${AUTO_DIR}"
   source .venv/bin/activate
 
-  # TODO: dopasuj do realnej komendy w repo,
-  # np.: python indexer_client.py --reindex-from-history
+  # TODO: dopasuj do realnej komendy w repo:
   ${PYTHON_BIN} indexer_client.py --reindex-from-history
 
   echo -e "${GREEN}$(txt reindex_stats)${RESET}"
 }
 
-# ---------- Main loop ----------
+# ---------- Language + menu ----------
+choose_language
+
 main_menu() {
   while true; do
     echo
@@ -464,6 +457,4 @@ main_menu() {
   done
 }
 
-# ---------- Run ----------
-choose_language
 main_menu
