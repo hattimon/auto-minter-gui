@@ -3,9 +3,8 @@
 
 ---
 
-# 🇬🇧 English Version
-
 <a id="english"></a>
+# 🇬🇧 English Version
 
 # 🍓 daemonRPi – Installation and Configuration (Multi-Instance)
 
@@ -89,9 +88,8 @@ ps aux | grep mbc20_auto_daemon.py | grep -v grep
 
 ***
 
-# 🇵🇱 Wersja Polska
-
 <a id="polski"></a>
+# 🇵🇱 Wersja Polska
 
 # 🍓 daemonRPi -- Instalacja i konfiguracja (Wiele instancji)
 
