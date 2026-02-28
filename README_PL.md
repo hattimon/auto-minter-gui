@@ -5,8 +5,8 @@
 ## Pobierz v0.1.7
 
 [![Windows EXE](https://img.shields.io/badge/Windows-EXE-blue)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.7)
-[![Linux-DEB](https://img.shields.io/badge/Linux-DEB-green)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.7) *(soon)*
-[![Raspberry%20Pi](https://img.shields.io/badge/Raspberry%20Pi-ARM%20DEB-red?logo=raspberrypi&logoColor=white)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.7) *(soon)*
+[![Linux-DEB](https://img.shields.io/badge/Linux-DEB-green)](daemonRPi.md) 
+[![Raspberry%20Pi](https://img.shields.io/badge/Raspberry%20Pi-ARM%20DEB-red?logo=raspberrypi&logoColor=white)](daemonRPi.md) 
 
 > Najnowsza wersja: **v0.1.7** – daemon MBC20 w tle, współdzielone ustawienia i logi, automatyczne indeksowanie oraz opcjonalny instalator autostartu dla Windows
 
@@ -20,6 +20,22 @@ automatycznym retry po błędach Moltbook oraz wsparciem indexera mbc20.xyz,
 a także konfigurowalnym **daemonem MBC20**, który uruchamia auto-mint w tle, korzystając ze wspólnych profili i ustawień.
 
 ***
+
+## 🍓 Opcjonalnie: MBC20 Daemon (Raspberry Pi / Linux)
+
+Jeśli chcesz, aby Auto-Mint działał w tle na Raspberry Pi (obsługa headless), możesz zainstalować opcjonalny **daemon MBC20** jako usługę systemową systemd.
+
+- Korzysta z tych samych plików współdzielonych co GUI:
+  `mbc20_profiles.json`, `mbc20_daemon_settings.json`, `mbc20_history.log`
+- Działa całkowicie w tle (możliwość instalacji przez SSH)
+- Obsługuje wiele niezależnych instancji (np. `Daemon1`, `Daemon2`)
+- Każdy folder tworzy własną usługę (nazwaną według katalogu) – brak konfliktów
+
+Pobierz skrypt instalacyjny do wybranego folderu i uruchom go.
+
+Pełna instrukcja instalacji znajduje się w pliku **[`daemonRPi.md`](daemonRPi.md)**.
+
+---
 
 ## Opcjonalnie: daemon MBC20 (Windows)
 
