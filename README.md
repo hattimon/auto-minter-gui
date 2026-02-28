@@ -5,8 +5,8 @@
 ## Download v0.1.7
 
 [![Windows EXE](https://img.shields.io/badge/Windows-EXE-blue)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.7)
-[![Linux-DEB](https://img.shields.io/badge/Linux-DEB-green)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.7) *(soon)*
-[![Raspberry%20Pi](https://img.shields.io/badge/Raspberry%20Pi-ARM%20DEB-red?logo=raspberrypi&logoColor=white)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.7) *(soon)*
+[![Linux-DEB](https://img.shields.io/badge/Linux-DEB-green)](daemonRPi.md) 
+[![Raspberry%20Pi](https://img.shields.io/badge/Raspberry%20Pi-ARM%20DEB-red?logo=raspberrypi&logoColor=white)](daemonRPi.md) 
 
 > Latest version: **v0.1.7** – background MBC20 daemon, shared settings & logs, automatic indexing, and optional Windows auto‑start installer
 
@@ -20,6 +20,21 @@ automatic Moltbook retry handling, mbc20.xyz indexer support,
 and a configurable **MBC20 daemon** that runs auto-mint in the background using shared profiles and settings.
 
 ***
+## 🍓 Optional: MBC20 Daemon (Raspberry Pi / Linux)
+
+If you want Auto-Mint to run continuously in the background on Raspberry Pi (headless supported), you can install the optional **MBC20 daemon** as a systemd service.
+
+- Uses the same shared files as the main GUI:
+  `mbc20_profiles.json`, `mbc20_daemon_settings.json`, `mbc20_history.log`
+- Runs fully in the background (SSH compatible)
+- Supports multiple independent instances (e.g. `Daemon1`, `Daemon2`)
+- Each folder creates its own service (named after the folder) – no conflicts
+
+Download the installer script into your target folder and run it.
+
+See full installation and usage instructions in **[`daemonRPi.md`](daemonRPi.md)**.
+
+---
 
 ## Optional: MBC20 Daemon (Windows)
 
