@@ -48,13 +48,28 @@ conflicts - Multiple daemons can run simultaneously
 
 ------------------------------------------------------------------------
 
-# 🔍 Service Management Example (Daemon1)
+### 🔍 Service Management (All Instances)
 
-    sudo systemctl status Daemon1
-    sudo systemctl start Daemon1
-    sudo systemctl stop Daemon1
-    sudo systemctl restart Daemon1
-    journalctl -u Daemon1 -f
+You can manage a single instance or all `mbc20-daemon-*` services.
+
+```bash
+# List all daemon services (active + inactive)
+systemctl list-units "mbc20-daemon-*.service" --all
+
+# Check one specific instance (example: folder Daemon1)
+sudo systemctl status mbc20-daemon-Daemon1.service
+
+# Start / stop / restart one instance
+sudo systemctl start   mbc20-daemon-Daemon1.service
+sudo systemctl stop    mbc20-daemon-Daemon1.service
+sudo systemctl restart mbc20-daemon-Daemon1.service
+
+# Follow logs of one instance
+journalctl -u mbc20-daemon-Daemon1.service -f
+
+# Show all running daemon Python processes
+ps aux | grep mbc20_auto_daemon.py | grep -v grep
+```
 
 ------------------------------------------------------------------------
 
@@ -136,27 +151,28 @@ Daemon1 - Obie instancje działają równolegle
 
 ------------------------------------------------------------------------
 
-# 🔍 Zarządzanie usługą (przykład: Daemon1)
+### 🔍 Zarządzanie usługami (wszystkie instancje)
 
-Status:
+Możesz zarządzać pojedynczą instancją lub wszystkimi usługami `mbc20-daemon-*`.
 
-    sudo systemctl status Daemon1
+```bash
+# Lista wszystkich usług daemona (aktywne + nieaktywne)
+systemctl list-units "mbc20-daemon-*.service" --all
 
-Start:
+# Status konkretnej instancji (przykład: katalog Daemon1)
+sudo systemctl status mbc20-daemon-Daemon1.service
 
-    sudo systemctl start Daemon1
+# Start / stop / restart jednej instancji
+sudo systemctl start   mbc20-daemon-Daemon1.service
+sudo systemctl stop    mbc20-daemon-Daemon1.service
+sudo systemctl restart mbc20-daemon-Daemon1.service
 
-Stop:
+# Podgląd logów jednej instancji
+journalctl -u mbc20-daemon-Daemon1.service -f
 
-    sudo systemctl stop Daemon1
-
-Restart:
-
-    sudo systemctl restart Daemon1
-
-Logi:
-
-    journalctl -u Daemon1 -f
+# Aktualnie uruchomione procesy daemona
+ps aux | grep mbc20_auto_daemon.py | grep -v grep
+```
 
 ------------------------------------------------------------------------
 
