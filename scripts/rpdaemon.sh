@@ -81,6 +81,68 @@ set_kv() {
   fi
 }
 
+# patch_daemon_lock: nadpisuje main() w mbc20_auto_daemon.py
+# tak, aby:
+# - nie blokowac startu przy istniejacym lockfile
+# - systemd pilnowal jednej instancji
+patch_daemon_lock() {
+  local script="${AUTO_DIR}/mbc20_auto_daemon.py"
+  if [ ! -f "$script" ]; then
+    echo "  - pomijam patch lockfile: brak $script"
+    return 0
+  fi
+  echo "  - patch mbc20_auto_daemon.py (main() bez blokady lockfile)..."
+  python3 - "$script" <<'PYEOF'
+import sys,re
+
+path = sys.argv[1]
+text = open(path, encoding="utf-8").read()
+
+# wytnij stary fragment od def main() do if __name__ == "__main__": main()
+pattern = r"def main\([\s\S]*?if __name__ == .__main__.:\s*\n\s*main\(\)\s*"
+
+new_main_block = '''
+def main():
+    settings = load_daemon_settings()
+    logger.info("DEBUG: loaded settings = %r", settings)
+
+    if not settings.get("enabled", True):
+        logger.info("Daemon disabled in settings, exiting.")
+        return
+
+    gui_pid = parse_gui_pid_from_argv()
+
+    # lockfile nie blokuje startu – systemd pilnuje jednej instancji
+    if is_another_daemon_running():
+        return
+
+    LOCK_FILE.write_text(str(os.getpid()), encoding="utf-8")
+    logger.info("Daemon invoked; pid=%d gui_pid=%r", os.getpid(), gui_pid)
+    logger.info("Daemon timezone: %r", time.tzname)
+
+    try:
+        run_daemon_once(settings, gui_pid)
+    finally:
+        if LOCK_FILE.exists():
+            try:
+                LOCK_FILE.unlink()
+            except OSError:
+                pass
+
+
+if __name__ == "__main__":
+    main()
+'''.strip()
+
+new_text, n = re.subn(pattern, new_main_block, text, flags=re.MULTILINE)
+if n == 0:
+    print("    (Uwaga: nie znaleziono bloku main() do podmiany – sprawdz recznie.)")
+else:
+    print(f"    Podmieniono funkcje main() (wystapienia: {n}).")
+    open(path, "w", encoding="utf-8").write(new_text)
+PYEOF
+}
+
 install_headless() {
   echo -e "${YELLOW}Instalacja / aktualizacja headless daemona...${RESET}"
   sudo apt-get update -qq
@@ -96,6 +158,9 @@ install_headless() {
 
   # od razu popraw wlasciciela repo
   sudo chown -R "${APP_USER}:${APP_USER}" "${AUTO_DIR}" 2>/dev/null || true
+
+  # patch mbc20_auto_daemon.py (usun blokade lockfile i nadpisz main())
+  patch_daemon_lock
 
   cd "${AUTO_DIR}"
   if [ ! -d ".venv" ]; then
