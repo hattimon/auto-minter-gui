@@ -16,6 +16,7 @@ LOG_FILE="${APP_DIR}/daemon.log"
 AUTO_DIR="${APP_DIR}/auto-minter-gui"
 ENV_FILE="${AUTO_DIR}/.env"
 PROFILES_JSON="${AUTO_DIR}/mbc20_profiles.json"
+SETTINGS_JSON="${AUTO_DIR}/mbc20_daemon_settings.json}"
 SETTINGS_JSON="${AUTO_DIR}/mbc20_daemon_settings.json"
 HISTORY_LOG="${AUTO_DIR}/mbc20_history.log"
 
@@ -87,17 +88,27 @@ patch_daemon_script() {
     echo "  - skip daemon patch: no ${script}"
     return 0
   fi
-  echo "  - patch mbc20_auto_daemon.py (main() + configure_moltbook_api)..."
+  echo "  - patch mbc20_auto_daemon.py (configure_moltbook_api + main)..."
   python3 - "$script" <<'PYEOF'
 import sys,re
 
 path = sys.argv[1]
 text = open(path, encoding="utf-8").read()
 
-# 1) Hard replace of configure_moltbook_api() with a known-good version,
-#    starting at column 0 to avoid indentation issues.
+# 1) remove ALL old configure_moltbook_api() definitions
+
+text, n_del = re.subn(
+    r'^def configure_moltbook_api\(\):[^\n]*\n(?:^[ \t]+.*\n)*',
+    '',
+    text,
+    flags=re.MULTILINE
+)
+if n_del:
+    print(f"    Removed {n_del} old configure_moltbook_api() definitions.")
 
 new_conf_block = '''
+# ---------- Moltbook / API ----------
+
 def configure_moltbook_api():
     load_dotenv(dotenv_path=".env", override=True)
     api_key = os.getenv("MOLTBOOK_API_KEY")
@@ -106,26 +117,25 @@ def configure_moltbook_api():
         raise RuntimeError("Missing MOLTBOOK_API_KEY")
     moltbook_client.set_api_key(api_key)
 
-'''.lstrip()
+'''.lstrip('\n')
 
-conf_pattern = r'^def configure_moltbook_api\(\):[\\s\\S]*?(?=^def |^if __name__ == .__main__.:|\\Z)'
-new_text, n_conf = re.subn(conf_pattern, new_conf_block, text, flags=re.MULTILINE)
-if n_conf == 0:
-    # if there was no old function, just insert ours near the top
-    insert_pat = r'(from dotenv import load_dotenv[^\n]*\n)'
-    new_text2, n_ins = re.subn(insert_pat, r'\1\n' + new_conf_block, text, count=1)
-    if n_ins:
-        print("    Inserted new configure_moltbook_api() after load_dotenv import.")
-        text = new_text2
-    else:
-        print("    Warning: could not insert configure_moltbook_api() automatically.")
-else:
-    print(f"    Replaced configure_moltbook_api() (matches: {n_conf}).")
+insert_pat = r'(from dotenv import load_dotenv[^\n]*\n)'
+new_text, n_ins = re.subn(insert_pat, r'\1\n' + new_conf_block, text, count=1)
+if n_ins:
+    print("    Inserted fresh configure_moltbook_api() after load_dotenv import.")
     text = new_text
+else:
+    text = new_conf_block + '\n\n' + text
+    print("    Inserted fresh configure_moltbook_api() at top of file (no load_dotenv import match).")
 
-# 2) main(): no hard lockfile block, systemd enforces single instance.
+# 2) cut EVERYTHING from first def main( to end of file, then append our main()
 
-pattern = r'def main\([\\s\\S]*?if __name__ == .__main__.:.*?\\n\\s*main\\(\\)\\s*'
+main_cut_pattern = r'^def main\([^\n]*\n(?:.|\n)*$'
+text, n_cut = re.subn(main_cut_pattern, '', text, flags=re.MULTILINE)
+if n_cut:
+    print("    Removed old main() block and anything after it.")
+else:
+    print("    (Warning: did not find existing main() to cut; will append new main())")
 
 new_main_block = '''
 def main():
@@ -158,15 +168,10 @@ def main():
 
 if __name__ == "__main__":
     main()
-'''.strip()
+'''.lstrip('\n')
 
-new_text2, n_main = re.subn(pattern, new_main_block, text, flags=re.MULTILINE)
-if n_main == 0:
-    print("    (Warning: did not find main() block to replace – check manually.)")
-else:
-    print(f"    Replaced main() (matches: {n_main}).")
-
-open(path, "w", encoding="utf-8").write(new_text2)
+text = text.rstrip() + '\n\n' + new_main_block + '\n'
+open(path, "w", encoding="utf-8").write(text)
 PYEOF
 }
 
@@ -261,7 +266,7 @@ EOF
     fix_profile_fields
   fi
 
-  rm -f "${AUTO_DIR}/mbc20_daemon.lock}"
+  rm -f "${AUTO_DIR}/mbc20_daemon.lock"
 
   if [ ! -f "$SETTINGS_JSON" ] || [ ! -s "$SETTINGS_JSON" ]; then
     FIRST_PROFILE="$("$VENV_PY" -c "
