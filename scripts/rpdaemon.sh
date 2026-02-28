@@ -181,10 +181,11 @@ install_headless() {
     ${PYTHON_BIN} -m venv .venv
   fi
 
+  # install deps in venv
   source .venv/bin/activate
-
-  # headless deps only – no PyQt6, no pip upgrade
-  pip install python-dotenv requests
+  python -m pip install --upgrade pip
+  python -m pip install python-dotenv requests
+  deactivate
 
   if [ -f "$ENV_FILE" ]; then
     echo -e "${GREEN}.env found - you can update values.${RESET}"
