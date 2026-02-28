@@ -37,7 +37,7 @@ Pełna instrukcja instalacji znajduje się w pliku **[`daemonRPi.md`](daemonRPi.
 
 ---
 
-## Opcjonalnie: daemon MBC20 (Windows)
+## 🪟 Opcjonalnie: daemon MBC20 (Windows)
 
 Jeśli chcesz, aby Auto-Mint działał ciągle w tle, również po restartach systemu, możesz zainstalować opcjonalny **daemon MBC20**.
 
