@@ -36,7 +36,7 @@ See full installation and usage instructions in **[`daemonRPi.md`](daemonRPi.md)
 
 ---
 
-## Optional: MBC20 Daemon (Windows)
+## 🪟 Optional: MBC20 Daemon (Windows)
 
 If you want Auto-Mint to run continuously in the background, including after system reboots, you can install the optional **MBC20 daemon**.
 
