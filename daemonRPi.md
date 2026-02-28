@@ -142,7 +142,7 @@ docelowego katalogu aplikacji.
 
     mkdir Daemon2
     cd Daemon2
-    wget https://raw.githubusercontent.com/hattimon/auto-minter-gui/main/scripts/rpdaemon.sh
+    wget https://raw.githubusercontent.com/hattimon/auto-minter-gui/main/scripts/rpdaemon_pl.sh
     chmod +x rpdaemon_pl.sh
     sudo ./rpdaemon_pl.sh
 
