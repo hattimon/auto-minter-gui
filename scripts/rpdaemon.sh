@@ -42,12 +42,14 @@ txt() {
         main_menu) echo "Menu glowne:";;
         m_install) echo "1) Zainstaluj / odswiez daemon (headless)";;
         m_add_profile) echo "2) Dodaj nowy profil tokena";;
-        m_select_profile) echo "3) Wybierz aktywny profil tokena";;
-        m_logs) echo "4) Podglad logow daemona";;
-        m_env) echo "5) Edytuj plik .env (API)";;
-        m_autostart) echo "6) Wlacz / wylacz autostart daemona";;
-        m_reindex) echo "7) Reindeksuj z historii logow";;
-        m_exit) echo "8) Wyjscie";;
+        m_edit_profile) echo "3) Edytuj profil tokena";;
+        m_delete_profile) echo "4) Usun profil tokena";;
+        m_select_profile) echo "5) Wybierz aktywny profil tokena";;
+        m_logs) echo "6) Podglad logow daemona";;
+        m_env) echo "7) Edytuj plik .env (API)";;
+        m_autostart) echo "8) Wlacz / wylacz autostart daemona";;
+        m_reindex) echo "9) Reindeksuj z historii logow";;
+        m_exit) echo "10) Wyjscie";;
         prompt_choice) echo "Wybierz opcje";;
         installing) echo "Instalacja / aktualizacja headless daemona...";;
         done_ok) echo "Gotowe.";;
@@ -58,8 +60,9 @@ txt() {
 
         ask_profile_name) echo "Nazwa profilu (np. GPT-mint):";;
         ask_tick) echo "Ticker tokena (np. GPT):";;
-        ask_collection) echo "ID kolekcji / ticka (puste jesli nie dotyczy):";;
+        ask_submolt) echo "Submolt (puste = domyslnie mbc20):";;
         ask_amount) echo "Ilosc tokenow na jeden mint (np. 100):";;
+        ask_title) echo "Tytul posta (np. MBC20 Inscription):";;
         ask_comment) echo "Dodatkowy komentarz do postow (puste = brak):";;
 
         profiles_missing) echo "Brak pliku profili, najpierw zainstaluj/utworz profil.";;
@@ -78,6 +81,7 @@ txt() {
         logs_info) echo "Podglad logow (Ctrl+C aby wyjsc):";;
         reindex_info) echo "Reindeksacja z historii logow - uruchamiam...";;
         reindex_stats) echo "Statystyki reindeksacji (do uzupelnienia przez Pythona).";;
+        confirm_delete) echo "Na pewno usunac ten profil? (y/n)";;
       esac
       ;;
     *)
@@ -89,12 +93,14 @@ txt() {
         main_menu) echo "Main menu:";;
         m_install) echo "1) Install / refresh daemon (headless)";;
         m_add_profile) echo "2) Add new token profile";;
-        m_select_profile) echo "3) Select active token profile";;
-        m_logs) echo "4) Tail daemon logs";;
-        m_env) echo "5) Edit .env file (API)";;
-        m_autostart) echo "6) Enable / disable daemon autostart";;
-        m_reindex) echo "7) Reindex from history logs";;
-        m_exit) echo "8) Exit";;
+        m_edit_profile) echo "3) Edit token profile";;
+        m_delete_profile) echo "4) Delete token profile";;
+        m_select_profile) echo "5) Select active token profile";;
+        m_logs) echo "6) Tail daemon logs";;
+        m_env) echo "7) Edit .env file (API)";;
+        m_autostart) echo "8) Enable / disable daemon autostart";;
+        m_reindex) echo "9) Reindex from history logs";;
+        m_exit) echo "10) Exit";;
         prompt_choice) echo "Choose option";;
         installing) echo "Installing / updating headless daemon...";;
         done_ok) echo "Done.";;
@@ -105,8 +111,9 @@ txt() {
 
         ask_profile_name) echo "Profile name (e.g. GPT-mint):";;
         ask_tick) echo "Token ticker (e.g. GPT):";;
-        ask_collection) echo "Collection / tick ID (empty if N/A):";;
+        ask_submolt) echo "Submolt (empty = default mbc20):";;
         ask_amount) echo "Amount per mint (e.g. 100):";;
+        ask_title) echo "Post title (e.g. MBC20 Inscription):";;
         ask_comment) echo "Extra comment in posts (empty = none):";;
 
         profiles_missing) echo "No profiles file, install/create profile first.";;
@@ -125,6 +132,7 @@ txt() {
         logs_info) echo "Tailing logs (Ctrl+C to exit):";;
         reindex_info) echo "Reindexing from history logs - running...";;
         reindex_stats) echo "Reindex stats (to be printed by Python script).";;
+        confirm_delete) echo "Really delete this profile? (y/n)";;
       esac
       ;;
   esac
@@ -270,10 +278,13 @@ add_profile() {
   read -p "> " PROFILE_NAME
   echo -e "${CYAN}$(txt ask_tick)${RESET}"
   read -p "> " TOKEN_TICK
-  echo -e "${CYAN}$(txt ask_collection)${RESET}"
-  read -p "> " TOKEN_ID
+  echo -e "${CYAN}$(txt ask_submolt)${RESET}"
+  read -p "> " SUBMOLT
+  [ -z "$SUBMOLT" ] && SUBMOLT="mbc20"
   echo -e "${CYAN}$(txt ask_amount)${RESET}"
   read -p "> " AMOUNT_PER_MINT
+  echo -e "${CYAN}$(txt ask_title)${RESET}"
+  read -p "> " TITLE
   echo -e "${CYAN}$(txt ask_comment)${RESET}"
   read -p "> " EXTRA_COMMENT
 
@@ -283,8 +294,9 @@ add_profile() {
   jq ".profiles += [{
     \"name\": \"${PROFILE_NAME}\",
     \"tick\": \"${TOKEN_TICK}\",
-    \"collection_id\": \"${TOKEN_ID}\",
+    \"submolt\": \"${SUBMOLT}\",
     \"amount_per_mint\": \"${AMOUNT_PER_MINT}\",
+    \"title\": \"${TITLE}\",
     \"extra_comment\": \"${EXTRA_COMMENT}\",
     \"daemon_header_suffix\": \"[Daemon Server ${RAND_ID}]\",
     \"use_llm_only_for_riddles\": true
@@ -292,6 +304,93 @@ add_profile() {
   mv "$TMP" "$PROFILES_JSON"
 
   echo -e "${GREEN}Profile added: ${PROFILE_NAME}${RESET}"
+}
+
+# ---------- Edit existing token profile ----------
+edit_profile() {
+  if [ ! -f "$PROFILES_JSON" ]; then
+    echo -e "${RED}$(txt profiles_missing)${RESET}"
+    return
+  fi
+
+  echo -e "${CYAN}$(txt select_profile_header)${RESET}"
+  jq -r '.profiles[].name' "$PROFILES_JSON" | nl -ba
+  echo
+  read -p "$(txt select_profile_prompt) " CHOICE
+  INDEX=$((CHOICE-1))
+
+  CURRENT=$(jq ".profiles[${INDEX}]" "$PROFILES_JSON")
+  [ "$CURRENT" = "null" ] && { echo -e "${RED}Invalid choice${RESET}"; return; }
+
+  CUR_NAME=$(echo "$CURRENT" | jq -r '.name')
+  CUR_TICK=$(echo "$CURRENT" | jq -r '.tick')
+  CUR_SUBMOLT=$(echo "$CURRENT" | jq -r '.submolt // "mbc20"')
+  CUR_AMOUNT=$(echo "$CURRENT" | jq -r '.amount_per_mint')
+  CUR_TITLE=$(echo "$CURRENT" | jq -r '.title // ""')
+  CUR_COMMENT=$(echo "$CURRENT" | jq -r '.extra_comment // ""')
+
+  echo "Current name: $CUR_NAME"
+  echo "Current tick: $CUR_TICK"
+  echo "Current submolt: $CUR_SUBMOLT"
+  echo "Current amount_per_mint: $CUR_AMOUNT"
+  echo "Current title: $CUR_TITLE"
+  echo "Current comment: $CUR_COMMENT"
+  echo
+
+  read -p "New name (empty = keep): " NEW_NAME
+  read -p "New tick (empty = keep): " NEW_TICK
+  read -p "New submolt (empty = keep): " NEW_SUBMOLT
+  read -p "New amount per mint (empty = keep): " NEW_AMOUNT
+  read -p "New title (empty = keep): " NEW_TITLE
+  read -p "New comment (empty = keep): " NEW_COMMENT
+
+  [ -z "$NEW_NAME" ] && NEW_NAME="$CUR_NAME"
+  [ -z "$NEW_TICK" ] && NEW_TICK="$CUR_TICK"
+  [ -z "$NEW_SUBMOLT" ] && NEW_SUBMOLT="$CUR_SUBMOLT"
+  [ -z "$NEW_AMOUNT" ] && NEW_AMOUNT="$CUR_AMOUNT"
+  [ -z "$NEW_TITLE" ] && NEW_TITLE="$CUR_TITLE"
+  [ -z "$NEW_COMMENT" ] && NEW_COMMENT="$CUR_COMMENT"
+
+  TMP=$(mktemp)
+  jq ".profiles[${INDEX}].name = \"${NEW_NAME}\" |
+      .profiles[${INDEX}].tick = \"${NEW_TICK}\" |
+      .profiles[${INDEX}].submolt = \"${NEW_SUBMOLT}\" |
+      .profiles[${INDEX}].amount_per_mint = \"${NEW_AMOUNT}\" |
+      .profiles[${INDEX}].title = \"${NEW_TITLE}\" |
+      .profiles[${INDEX}].extra_comment = \"${NEW_COMMENT}\"" \
+      "$PROFILES_JSON" > "$TMP"
+  mv "$TMP" "$PROFILES_JSON"
+
+  echo -e "${GREEN}Profile updated: ${NEW_NAME}${RESET}"
+}
+
+# ---------- Delete token profile ----------
+delete_profile() {
+  if [ ! -f "$PROFILES_JSON" ]; then
+    echo -e "${RED}$(txt profiles_missing)${RESET}"
+    return
+  fi
+
+  echo -e "${CYAN}$(txt select_profile_header)${RESET}"
+  jq -r '.profiles[].name' "$PROFILES_JSON" | nl -ba
+  echo
+  read -p "$(txt select_profile_prompt) " CHOICE
+  INDEX=$((CHOICE-1))
+
+  NAME=$(jq -r ".profiles[${INDEX}].name" "$PROFILES_JSON")
+  [ "$NAME" = "null" ] && { echo -e "${RED}Invalid choice${RESET}"; return; }
+
+  read -p "$(txt confirm_delete) " ans
+  case "$ans" in
+    y|Y)
+      TMP=$(mktemp)
+      jq "del(.profiles[${INDEX}])" "$PROFILES_JSON" > "$TMP"
+      mv "$TMP" "$PROFILES_JSON"
+      echo -e "${YELLOW}Profile deleted: ${NAME}${RESET}"
+      ;;
+    *)
+      ;;
+  esac
 }
 
 # ---------- Select active token profile ----------
@@ -419,6 +518,8 @@ main_menu() {
     echo -e "${BOLD}${CYAN}$(txt main_menu)${RESET}"
     echo -e "${YELLOW}$(txt m_install)${RESET}"
     echo -e "${YELLOW}$(txt m_add_profile)${RESET}"
+    echo -e "${YELLOW}$(txt m_edit_profile)${RESET}"
+    echo -e "${YELLOW}$(txt m_delete_profile)${RESET}"
     echo -e "${YELLOW}$(txt m_select_profile)${RESET}"
     echo -e "${YELLOW}$(txt m_logs)${RESET}"
     echo -e "${YELLOW}$(txt m_env)${RESET}"
@@ -430,12 +531,14 @@ main_menu() {
     case "$choice" in
       1) install_headless ;;
       2) add_profile ;;
-      3) select_profile ;;
-      4) tail_logs ;;
-      5) edit_env ;;
-      6) toggle_autostart ;;
-      7) reindex_history ;;
-      8) exit 0 ;;
+      3) edit_profile ;;
+      4) delete_profile ;;
+      5) select_profile ;;
+      6) tail_logs ;;
+      7) edit_env ;;
+      8) toggle_autostart ;;
+      9) reindex_history ;;
+      10) exit 0 ;;
       *) ;;
     esac
   done
