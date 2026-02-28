@@ -181,7 +181,6 @@ install_headless() {
     ${PYTHON_BIN} -m venv .venv
   fi
 
-  # install deps in venv
   source .venv/bin/activate
   python -m pip install --upgrade pip
   python -m pip install python-dotenv requests
@@ -238,8 +237,7 @@ EOF
   cat > "${APP_DIR}/start_daemon.sh" <<EOF
 #!/bin/bash
 cd "${AUTO_DIR}"
-source .venv/bin/activate
-${PYTHON_BIN} auto_minter.py --daemon >> "${LOG_FILE}" 2>&1
+"${AUTO_DIR}/.venv/bin/python" auto_minter.py --daemon >> "${LOG_FILE}" 2>&1
 EOF
   chmod +x "${APP_DIR}/start_daemon.sh"
 
@@ -501,7 +499,7 @@ tail_logs() {
   tail -f "$LOG_FILE"
 }
 
-# ---------- Reindex (placeholder) ----------
+# ---------- Reindex ----------
 reindex_history() {
   echo -e "${YELLOW}$(txt reindex_info)${RESET}"
   cd "${AUTO_DIR}"
