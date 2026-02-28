@@ -1,227 +1,128 @@
 #!/bin/bash
-# Raspberry Pi MBC20 headless daemon manager (rpdaemon.sh)
-
+# rpdaemon.sh - Moltbook MBC20 headless daemon manager v3
+# Pelna instalacja od A do Z: apt, venv, psutil, brak PyQt6,
+# fix profiles.json (format listy), fix start_daemon.sh, multi-folder
 set -e
-
-# ---------- Colors ----------
-RED="\033[31m"
-GREEN="\033[32m"
-YELLOW="\033[33m"
-BLUE="\033[34m"
-MAGENTA="\033[35m"
-CYAN="\033[36m"
-BOLD="\033[1m"
-RESET="\033[0m"
-
-# ---------- Basic context ----------
+RED="\033[31m"; GREEN="\033[32m"; YELLOW="\033[33m"
+CYAN="\033[36m"; MAGENTA="\033[35m"; BOLD="\033[1m"; RESET="\033[0m"
 APP_USER="${SUDO_USER:-$USER}"
-APP_DIR="$(pwd)"
+APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_BASENAME="$(basename "${APP_DIR}")"
 REPO_URL="https://github.com/hattimon/auto-minter-gui.git"
-PYTHON_BIN="python3"
 SERVICE_NAME="mbc20-daemon-${APP_BASENAME}"
 LOG_FILE="${APP_DIR}/daemon.log"
-
 AUTO_DIR="${APP_DIR}/auto-minter-gui"
 ENV_FILE="${AUTO_DIR}/.env"
 PROFILES_JSON="${AUTO_DIR}/mbc20_profiles.json"
 SETTINGS_JSON="${AUTO_DIR}/mbc20_daemon_settings.json"
-
+HISTORY_LOG="${AUTO_DIR}/mbc20_history.log"
 LANG="en"
 
-# ---------- Texts (no diacritics) ----------
-txt() {
-  local key="$1"
-  case "$LANG" in
-    pl)
-      case "$key" in
-        title) echo "== Moltbook MBC20 Daemon menedzer (folder: ${APP_BASENAME}) ==";;
-        choose_lang) echo "Wybierz jezyk:";;
-        lang_en) echo "1) English";;
-        lang_pl) echo "2) Polski";;
-        main_menu) echo "Menu glowne:";;
-        m_install) echo "1) Zainstaluj / odswiez daemon (headless)";;
-        m_add_profile) echo "2) Dodaj nowy profil tokena";;
-        m_edit_profile) echo "3) Edytuj profil tokena";;
-        m_delete_profile) echo "4) Usun profil tokena";;
-        m_select_profile) echo "5) Wybierz aktywny profil tokena";;
-        m_logs) echo "6) Podglad logow daemona";;
-        m_env) echo "7) Edytuj plik .env (API)";;
-        m_autostart) echo "8) Wlacz / wylacz autostart daemona";;
-        m_reindex) echo "9) Reindeksuj z historii logow";;
-        m_exit) echo "10) Wyjscie";;
-        prompt_choice) echo "Wybierz opcje";;
-        installing) echo "Instalacja / aktualizacja headless daemona...";;
-        done_ok) echo "Gotowe.";;
-
-        ask_molt) echo "MOLTBOOK_API_KEY (puste = bez zmiany, przy pierwszej instalacji wymagane):";;
-        ask_openai) echo "OPENAI_API_KEY (puste = brak/bez zmiany):";;
-        ask_api_name) echo "MOLTBOOK_API_NAME (przyjazna nazwa serwera/API):";;
-
-        ask_profile_name) echo "Nazwa profilu (np. GPT-mint):";;
-        ask_tick) echo "Ticker tokena (np. GPT):";;
-        ask_submolt) echo "Submolt (puste = domyslnie mbc20):";;
-        ask_amount) echo "Ilosc tokenow na jeden mint (np. 100):";;
-        ask_title) echo "Tytul posta (np. MBC20 Inscription):";;
-        ask_comment) echo "Dodatkowy komentarz do postow (puste = brak):";;
-
-        profiles_missing) echo "Brak pliku profili, najpierw zainstaluj/utworz profil.";;
-        select_profile_header) echo "Dostepne profile:";;
-        select_profile_prompt) echo "Wybierz numer profilu:";;
-
-        env_menu1) echo "1) Edytuj w edytorze (nano)";;
-        env_menu2) echo "2) Szybka aktualizacja wartosci";;
-        env_menu3) echo "3) Powrot";;
-
-        autostart_on) echo "Autostart jest WLACZONY. Wylaczyc? (y/n)";;
-        autostart_off) echo "Autostart jest WYLACZONY. Wlaczyc? (y/n)";;
-        autostart_now_on) echo "Autostart zostal wlaczony.";;
-        autostart_now_off) echo "Autostart zostal wylaczony.";;
-
-        logs_info) echo "Podglad logow (Ctrl+C aby wyjsc):";;
-        reindex_info) echo "Reindeksacja z historii logow - uruchamiam...";;
-        reindex_stats) echo "Statystyki reindeksacji (do uzupelnienia przez Pythona).";;
-        confirm_delete) echo "Na pewno usunac ten profil? (y/n)";;
-      esac
-      ;;
-    *)
-      case "$key" in
-        title) echo "== Moltbook MBC20 Daemon manager (folder: ${APP_BASENAME}) ==";;
-        choose_lang) echo "Select language:";;
-        lang_en) echo "1) English";;
-        lang_pl) echo "2) Polski";;
-        main_menu) echo "Main menu:";;
-        m_install) echo "1) Install / refresh daemon (headless)";;
-        m_add_profile) echo "2) Add new token profile";;
-        m_edit_profile) echo "3) Edit token profile";;
-        m_delete_profile) echo "4) Delete token profile";;
-        m_select_profile) echo "5) Select active token profile";;
-        m_logs) echo "6) Tail daemon logs";;
-        m_env) echo "7) Edit .env file (API)";;
-        m_autostart) echo "8) Enable / disable daemon autostart";;
-        m_reindex) echo "9) Reindex from history logs";;
-        m_exit) echo "10) Exit";;
-        prompt_choice) echo "Choose option";;
-        installing) echo "Installing / updating headless daemon...";;
-        done_ok) echo "Done.";;
-
-        ask_molt) echo "MOLTBOOK_API_KEY (empty = keep, required on first install):";;
-        ask_openai) echo "OPENAI_API_KEY (empty = none/keep):";;
-        ask_api_name) echo "MOLTBOOK_API_NAME (friendly server/API name):";;
-
-        ask_profile_name) echo "Profile name (e.g. GPT-mint):";;
-        ask_tick) echo "Token ticker (e.g. GPT):";;
-        ask_submolt) echo "Submolt (empty = default mbc20):";;
-        ask_amount) echo "Amount per mint (e.g. 100):";;
-        ask_title) echo "Post title (e.g. MBC20 Inscription):";;
-        ask_comment) echo "Extra comment in posts (empty = none):";;
-
-        profiles_missing) echo "No profiles file, install/create profile first.";;
-        select_profile_header) echo "Available profiles:";;
-        select_profile_prompt) echo "Select profile number:";;
-
-        env_menu1) echo "1) Edit in editor (nano)";;
-        env_menu2) echo "2) Quick update values";;
-        env_menu3) echo "3) Back";;
-
-        autostart_on) echo "Autostart is ENABLED. Disable? (y/n)";;
-        autostart_off) echo "Autostart is DISABLED. Enable? (y/n)";;
-        autostart_now_on) echo "Autostart has been enabled.";;
-        autostart_now_off) echo "Autostart has been disabled.";;
-
-        logs_info) echo "Tailing logs (Ctrl+C to exit):";;
-        reindex_info) echo "Reindexing from history logs - running...";;
-        reindex_stats) echo "Reindex stats (to be printed by Python script).";;
-        confirm_delete) echo "Really delete this profile? (y/n)";;
-      esac
-      ;;
-  esac
+venv_python() {
+  local venv_bin="${AUTO_DIR}/.venv/bin"
+  local py
+  py=$(find "${venv_bin}" -maxdepth 1 -name "python3.*" ! -name "*config*" ! -name "*-*" 2>/dev/null | sort -V | tail -1)
+  [ -z "$py" ] && py="${venv_bin}/python3"
+  echo "$py"
 }
 
-# ---------- Language selection ----------
-choose_language() {
-  echo -e "${BOLD}${CYAN}$(txt title)${RESET}"
-  echo
-  echo "$(txt choose_lang)"
-  echo "  $(txt lang_en)"
-  echo "  $(txt lang_pl)"
-  read -p "> " lang_choice
-  case "$lang_choice" in
-    2) LANG="pl" ;;
-    *) LANG="en" ;;
-  esac
+fix_profiles_json() {
+  [ -f "$PROFILES_JSON" ] || return 0
+  local VENV_PY; VENV_PY="$(venv_python)"
+  "$VENV_PY" - "$PROFILES_JSON" <<'PYEOF'
+import json,sys
+p=sys.argv[1]
+with open(p) as f: d=json.load(f)
+if isinstance(d,dict) and 'profiles' in d:
+  with open(p,'w') as f: json.dump(d['profiles'],f,indent=2)
+  print('  - profiles.json: skonwertowano do listy')
+elif isinstance(d,list):
+  print('  - profiles.json: format OK')
+PYEOF
 }
 
-# ---------- Headless install ----------
-install_headless() {
-  echo -e "${YELLOW}$(txt installing)${RESET}"
+fix_profile_fields() {
+  [ -f "$PROFILES_JSON" ] || return 0
+  local VENV_PY; VENV_PY="$(venv_python)"
+  "$VENV_PY" - "$PROFILES_JSON" <<'PYEOF'
+import json,sys
+p=sys.argv[1]
+with open(p) as f: d=json.load(f)
+if not isinstance(d,list): d=[]
+changed=False
+for prof in d:
+  if 'amount_per_mint' in prof and 'amt' not in prof:
+    prof['amt']=prof['amount_per_mint']; changed=True
+  if 'amt' in prof and 'amount_per_mint' not in prof:
+    prof['amount_per_mint']=prof['amt']; changed=True
+if changed:
+  with open(p,'w') as f: json.dump(d,f,indent=2)
+  print('  - profiles.json: dodano brakujace pola amt/amount_per_mint')
+else:
+  print('  - profiles.json: pola OK')
+PYEOF
+}
 
-  if [ -f /etc/os-release ]; then
-    . /etc/os-release
-    case "$ID" in
-      debian|ubuntu|raspbian) ;;
-      *) echo -e "${RED}Unsupported distro ID=$ID (expected debian/ubuntu/raspbian).${RESET}";;
-    esac
+set_kv() {
+  local key="$1" val="$2"
+  [ -z "$val" ] && return 0
+  touch "$ENV_FILE"
+  if grep -q "^${key}=" "$ENV_FILE" 2>/dev/null; then
+    sed -i "s|^${key}=.*|${key}=${val}|" "$ENV_FILE"
+  else
+    echo "${key}=${val}" >> "$ENV_FILE"
   fi
+}
 
-  sudo apt update
-  sudo apt install -y git ${PYTHON_BIN} ${PYTHON_BIN}-venv jq
-
-  if [ ! -d "${AUTO_DIR}" ]; then
+install_headless() {
+  echo -e "${YELLOW}Instalacja / aktualizacja headless daemona...${RESET}"
+  sudo apt-get update -qq
+  sudo apt-get install -y git python3 python3-venv python3-dev jq build-essential curl
+  if [ ! -d "${AUTO_DIR}/.git" ]; then
+    echo "  - klonowanie repo..."
     git clone "${REPO_URL}" "${AUTO_DIR}"
   else
-    cd "${AUTO_DIR}"
-    git pull
-    cd "${APP_DIR}"
+    echo "  - aktualizacja repo..."
+    cd "${AUTO_DIR}" && git pull && cd "${APP_DIR}"
   fi
-
   cd "${AUTO_DIR}"
-
   if [ ! -d ".venv" ]; then
-    ${PYTHON_BIN} -m venv .venv
+    echo "  - tworzenie venv..."
+    python3 -m venv .venv
   fi
-
-  source .venv/bin/activate
-  python -m pip install --upgrade pip
-  python -m pip install python-dotenv requests
-  deactivate
-
-  if [ -f "$ENV_FILE" ]; then
-    echo -e "${GREEN}.env found - you can update values.${RESET}"
-  fi
-
-  local NEW_MOLT NEW_OPENAI NEW_NAME
-  read -p "$(txt ask_molt) " NEW_MOLT
-  read -p "$(txt ask_openai) " NEW_OPENAI
-  read -p "$(txt ask_api_name) " NEW_NAME
-
+  VENV_PY="$(venv_python)"
+  echo "  - venv python: ${VENV_PY}"
+  echo "  - instalacja zaleznosci: requests, python-dotenv, psutil..."
+  "$VENV_PY" -m pip install --upgrade pip --quiet
+  "$VENV_PY" -m pip install requests python-dotenv psutil --quiet
+  echo -e "${GREEN}  - zaleznosci OK${RESET}"
   touch "$ENV_FILE"
-  cp "$ENV_FILE" "${ENV_FILE}.bak.$(date +%s)"
-
-  set_kv() {
-    local key="$1"
-    local val="$2"
-    if grep -q "^${key}=" "$ENV_FILE"; then
-      [ -n "$val" ] && sed -i "s/^${key}=.*/${key}=${val}/" "$ENV_FILE"
-    else
-      [ -n "$val" ] && echo "${key}=${val}" >> "$ENV_FILE"
-    fi
-  }
-
-  [ -n "$NEW_MOLT" ] && set_kv "MOLTBOOK_API_KEY" "$NEW_MOLT"
-  [ -n "$NEW_OPENAI" ] && set_kv "OPENAI_API_KEY" "$NEW_OPENAI"
-  [ -n "$NEW_NAME" ] && set_kv "MOLTBOOK_API_NAME" "$NEW_NAME"
-
-  if [ ! -f "$PROFILES_JSON" ]; then
+  cp "$ENV_FILE" "${ENV_FILE}.bak.$(date +%s)" 2>/dev/null || true
+  echo
+  read -p "MOLTBOOK_API_KEY (puste=bez zmiany): " NEW_MOLT
+  read -p "OPENAI_API_KEY (puste=brak/bez zmiany): " NEW_OPENAI
+  read -p "MOLTBOOK_API_NAME (przyjazna nazwa): " NEW_NAME
+  set_kv "MOLTBOOK_API_KEY" "$NEW_MOLT"
+  set_kv "OPENAI_API_KEY" "$NEW_OPENAI"
+  set_kv "MOLTBOOK_API_NAME" "$NEW_NAME"
+  if [ ! -f "$PROFILES_JSON" ] || [ ! -s "$PROFILES_JSON" ]; then
+    echo "  - brak profili, tworzenie pierwszego..."
     add_profile
+  else
+    fix_profiles_json
+    fix_profile_fields
   fi
-
-  if [ ! -f "$SETTINGS_JSON" ]; then
-    local PROFILE_NAME
-    PROFILE_NAME=$(jq -r '.profiles[0].name' "$PROFILES_JSON")
-    cat > "$SETTINGS_JSON" <<EOF
+  rm -f "${AUTO_DIR}/mbc20_daemon.lock"
+  if [ ! -f "$SETTINGS_JSON" ] || [ ! -s "$SETTINGS_JSON" ]; then
+    FIRST_PROFILE="$("$VENV_PY" -c "
+import json
+d=json.load(open('${PROFILES_JSON}'))
+p=d if isinstance(d,list) else d.get('profiles',[])
+print(p[0]['name'] if p else '')
+" 2>/dev/null || echo "")"
+    cat > "$SETTINGS_JSON" << JSONEOF
 {
-  "profile_name": "${PROFILE_NAME}",
+  "profile_name": "${FIRST_PROFILE}",
   "first_start_minutes": 1,
   "base_interval_minutes": 35,
   "retry_5xx_until_success": true,
@@ -231,316 +132,264 @@ install_headless() {
   "start_daemon_on_launch": true,
   "language": "pl"
 }
-EOF
+JSONEOF
+    echo "  - settings.json utworzono (profil: ${FIRST_PROFILE})"
   fi
-
-  cat > "${APP_DIR}/start_daemon.sh" <<EOF
+  cat > "${APP_DIR}/start_daemon.sh" << STARTEOF
 #!/bin/bash
 cd "${AUTO_DIR}"
-"${AUTO_DIR}/.venv/bin/python" auto_minter.py --daemon >> "${LOG_FILE}" 2>&1
-EOF
+${VENV_PY} mbc20_auto_daemon.py >> "${LOG_FILE}" 2>&1
+STARTEOF
   chmod +x "${APP_DIR}/start_daemon.sh"
-
-  local SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
-  sudo bash -c "cat > '${SERVICE_FILE}'" <<EOF
+  echo "  - start_daemon.sh OK (python: ${VENV_PY})"
+  SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
+  sudo tee "$SERVICE_FILE" > /dev/null << SVCEOF
 [Unit]
 Description=Moltbook MBC20 Auto-Minter (${APP_BASENAME})
-After=network.target
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 User=${APP_USER}
 WorkingDirectory=${AUTO_DIR}
 ExecStart=${APP_DIR}/start_daemon.sh
-Restart=always
-RestartSec=10
+Restart=on-failure
+RestartSec=15
+StartLimitIntervalSec=120
+StartLimitBurst=5
 
 [Install]
 WantedBy=multi-user.target
-EOF
-
+SVCEOF
   sudo systemctl daemon-reload
   sudo systemctl enable "${SERVICE_NAME}.service"
   sudo systemctl restart "${SERVICE_NAME}.service"
-
-  echo -e "${GREEN}$(txt done_ok)${RESET}"
+  echo
+  echo -e "${GREEN}Gotowe.${RESET}"
+  echo -e "${CYAN}  Logi: tail -f ${HISTORY_LOG}${RESET}"
+  echo -e "${CYAN}  Status: systemctl status ${SERVICE_NAME}${RESET}"
 }
 
-# ---------- Add new token profile ----------
 add_profile() {
   mkdir -p "${AUTO_DIR}"
-  touch "$PROFILES_JSON"
-  if [ ! -s "$PROFILES_JSON" ]; then
-    echo '{"profiles": []}' > "$PROFILES_JSON"
+  if [ ! -f "$PROFILES_JSON" ] || [ ! -s "$PROFILES_JSON" ]; then
+    echo "[]" > "$PROFILES_JSON"
   fi
-
-  echo -e "${CYAN}$(txt ask_profile_name)${RESET}"
-  read -p "> " PROFILE_NAME
-  echo -e "${CYAN}$(txt ask_tick)${RESET}"
-  read -p "> " TOKEN_TICK
-  echo -e "${CYAN}$(txt ask_submolt)${RESET}"
-  read -p "> " SUBMOLT
+  fix_profiles_json
+  VENV_PY="$(venv_python)"
+  echo
+  read -p "Nazwa profilu (np. GPT-mint): " PROFILE_NAME
+  read -p "Ticker tokena (np. GPT): " TOKEN_TICK
+  read -p "Submolt (puste=mbc20): " SUBMOLT
   [ -z "$SUBMOLT" ] && SUBMOLT="mbc20"
-  echo -e "${CYAN}$(txt ask_amount)${RESET}"
-  read -p "> " AMOUNT_PER_MINT
-  echo -e "${CYAN}$(txt ask_title)${RESET}"
-  read -p "> " TITLE
-  echo -e "${CYAN}$(txt ask_comment)${RESET}"
-  read -p "> " EXTRA_COMMENT
-
-  RAND_ID=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c10)
-
-  TMP=$(mktemp)
-  jq ".profiles += [{
-    \"name\": \"${PROFILE_NAME}\",
-    \"tick\": \"${TOKEN_TICK}\",
-    \"submolt\": \"${SUBMOLT}\",
-    \"amount_per_mint\": \"${AMOUNT_PER_MINT}\",
-    \"title\": \"${TITLE}\",
-    \"extra_comment\": \"${EXTRA_COMMENT}\",
-    \"daemon_header_suffix\": \"[Daemon Server ${RAND_ID}]\",
-    \"use_llm_only_for_riddles\": true
-  }]" "$PROFILES_JSON" > "$TMP"
-  mv "$TMP" "$PROFILES_JSON"
-
-  echo -e "${GREEN}Profile added: ${PROFILE_NAME}${RESET}"
+  read -p "Ilosc tokenow na mint (np. 100): " AMOUNT
+  read -p "Tytul posta: " TITLE
+  read -p "Komentarz dodatkowy (puste=brak): " COMMENT
+  RAND_ID=$(tr -dc A-Za-z0-9 </dev/urandom | head -c10)
+  "$VENV_PY" - "$PROFILES_JSON" "$PROFILE_NAME" "$TOKEN_TICK" "$SUBMOLT" "$AMOUNT" "$TITLE" "$COMMENT" "$RAND_ID" <<'PYEOF'
+import json,sys
+path,name,tick,submolt,amt,title,comment,rand=sys.argv[1:]
+with open(path) as f: profiles=json.load(f)
+if not isinstance(profiles,list): profiles=[]
+profiles.append({'name':name,'tick':tick,'submolt':submolt,
+  'amount_per_mint':amt,'amt':amt,'title':title,
+  'extra_comment':comment,'daemon_header_suffix':f'[Daemon {rand}]',
+  'use_llm_only_for_riddles':True})
+with open(path,'w') as f: json.dump(profiles,f,indent=2)
+print(f'  - Profil dodany: {name}')
+PYEOF
 }
 
-# ---------- Edit existing token profile ----------
 edit_profile() {
-  if [ ! -f "$PROFILES_JSON" ]; then
-    echo -e "${RED}$(txt profiles_missing)${RESET}"
-    return
-  fi
-
-  echo -e "${CYAN}$(txt select_profile_header)${RESET}"
-  jq -r '.profiles[].name' "$PROFILES_JSON" | nl -ba
+  [ -f "$PROFILES_JSON" ] || { echo "Brak pliku profili."; return; }
+  fix_profiles_json
+  VENV_PY="$(venv_python)"
+  echo "Dostepne profile:"
+  "$VENV_PY" -c "import json; [print(f\"{i+1}) {p['name']} tick={p.get('tick','')} amt={p.get('amt',p.get('amount_per_mint',''))}\") for i,p in enumerate(json.load(open('$PROFILES_JSON')))]"
   echo
-  read -p "$(txt select_profile_prompt) " CHOICE
+  read -p "Wybierz numer: " CHOICE
   INDEX=$((CHOICE-1))
-
-  CURRENT=$(jq ".profiles[${INDEX}]" "$PROFILES_JSON")
-  [ "$CURRENT" = "null" ] && { echo -e "${RED}Invalid choice${RESET}"; return; }
-
-  CUR_NAME=$(echo "$CURRENT" | jq -r '.name')
-  CUR_TICK=$(echo "$CURRENT" | jq -r '.tick')
-  CUR_SUBMOLT=$(echo "$CURRENT" | jq -r '.submolt // "mbc20"')
-  CUR_AMOUNT=$(echo "$CURRENT" | jq -r '.amount_per_mint')
-  CUR_TITLE=$(echo "$CURRENT" | jq -r '.title // ""')
-  CUR_COMMENT=$(echo "$CURRENT" | jq -r '.extra_comment // ""')
-
-  echo "Current name: $CUR_NAME"
-  echo "Current tick: $CUR_TICK"
-  echo "Current submolt: $CUR_SUBMOLT"
-  echo "Current amount_per_mint: $CUR_AMOUNT"
-  echo "Current title: $CUR_TITLE"
-  echo "Current comment: $CUR_COMMENT"
-  echo
-
-  read -p "New name (empty = keep): " NEW_NAME
-  read -p "New tick (empty = keep): " NEW_TICK
-  read -p "New submolt (empty = keep): " NEW_SUBMOLT
-  read -p "New amount per mint (empty = keep): " NEW_AMOUNT
-  read -p "New title (empty = keep): " NEW_TITLE
-  read -p "New comment (empty = keep): " NEW_COMMENT
-
-  [ -z "$NEW_NAME" ] && NEW_NAME="$CUR_NAME"
-  [ -z "$NEW_TICK" ] && NEW_TICK="$CUR_TICK"
-  [ -z "$NEW_SUBMOLT" ] && NEW_SUBMOLT="$CUR_SUBMOLT"
-  [ -z "$NEW_AMOUNT" ] && NEW_AMOUNT="$CUR_AMOUNT"
-  [ -z "$NEW_TITLE" ] && NEW_TITLE="$CUR_TITLE"
-  [ -z "$NEW_COMMENT" ] && NEW_COMMENT="$CUR_COMMENT"
-
-  TMP=$(mktemp)
-  jq ".profiles[${INDEX}].name = \"${NEW_NAME}\" |
-      .profiles[${INDEX}].tick = \"${NEW_TICK}\" |
-      .profiles[${INDEX}].submolt = \"${NEW_SUBMOLT}\" |
-      .profiles[${INDEX}].amount_per_mint = \"${NEW_AMOUNT}\" |
-      .profiles[${INDEX}].title = \"${NEW_TITLE}\" |
-      .profiles[${INDEX}].extra_comment = \"${NEW_COMMENT}\"" \
-      "$PROFILES_JSON" > "$TMP"
-  mv "$TMP" "$PROFILES_JSON"
-
-  echo -e "${GREEN}Profile updated: ${NEW_NAME}${RESET}"
+  read -p "Nowa nazwa (puste=zachowaj): " NN
+  read -p "Nowy ticker (puste=zachowaj): " NT
+  read -p "Nowy submolt (puste=zachowaj): " NS
+  read -p "Nowa ilosc (puste=zachowaj): " NA
+  read -p "Nowy tytul (puste=zachowaj): " NTI
+  read -p "Nowy komentarz (puste=zachowaj): " NC
+  "$VENV_PY" - "$PROFILES_JSON" "$INDEX" "$NN" "$NT" "$NS" "$NA" "$NTI" "$NC" <<'PYEOF'
+import json,sys
+path,idx=sys.argv[1],int(sys.argv[2])
+nn,nt,ns,na,nti,nc=sys.argv[3:]
+with open(path) as f: p=json.load(f)
+r=p[idx]
+if nn: r['name']=nn
+if nt: r['tick']=nt
+if ns: r['submolt']=ns
+if na: r['amt']=na; r['amount_per_mint']=na
+if nti: r['title']=nti
+if nc: r['extra_comment']=nc
+with open(path,'w') as f: json.dump(p,f,indent=2)
+print(f'  - Zaktualizowano: {r["name"]}')
+PYEOF
 }
 
-# ---------- Delete token profile ----------
 delete_profile() {
-  if [ ! -f "$PROFILES_JSON" ]; then
-    echo -e "${RED}$(txt profiles_missing)${RESET}"
-    return
-  fi
-
-  echo -e "${CYAN}$(txt select_profile_header)${RESET}"
-  jq -r '.profiles[].name' "$PROFILES_JSON" | nl -ba
+  [ -f "$PROFILES_JSON" ] || { echo "Brak pliku profili."; return; }
+  fix_profiles_json
+  VENV_PY="$(venv_python)"
+  echo "Dostepne profile:"
+  "$VENV_PY" -c "import json; [print(f\"{i+1}) {p['name']}\") for i,p in enumerate(json.load(open('$PROFILES_JSON')))]"
   echo
-  read -p "$(txt select_profile_prompt) " CHOICE
-  INDEX=$((CHOICE-1))
-
-  NAME=$(jq -r ".profiles[${INDEX}].name" "$PROFILES_JSON")
-  [ "$NAME" = "null" ] && { echo -e "${RED}Invalid choice${RESET}"; return; }
-
-  read -p "$(txt confirm_delete) " ans
-  case "$ans" in
-    y|Y)
-      TMP=$(mktemp)
-      jq "del(.profiles[${INDEX}])" "$PROFILES_JSON" > "$TMP"
-      mv "$TMP" "$PROFILES_JSON"
-      echo -e "${YELLOW}Profile deleted: ${NAME}${RESET}"
-      ;;
-    *)
-      ;;
-  esac
+  read -p "Wybierz numer: " CHOICE
+  read -p "Na pewno usunac? (y/n): " CONFIRM
+  if [ "$CONFIRM" = "y" ] || [ "$CONFIRM" = "Y" ]; then
+    INDEX=$((CHOICE-1))
+    "$VENV_PY" - "$PROFILES_JSON" "$INDEX" <<'PYEOF'
+import json,sys
+path,idx=sys.argv[1],int(sys.argv[2])
+with open(path) as f: p=json.load(f)
+rem=p.pop(idx)
+with open(path,'w') as f: json.dump(p,f,indent=2)
+print(f'  - Usunieto: {rem["name"]}')
+PYEOF
+  fi
 }
 
-# ---------- Select active token profile ----------
 select_profile() {
-  if [ ! -f "$PROFILES_JSON" ]; then
-    echo -e "${RED}$(txt profiles_missing)${RESET}"
-    return
-  fi
-
-  echo -e "${CYAN}$(txt select_profile_header)${RESET}"
-  jq -r '.profiles[].name' "$PROFILES_JSON" | nl -ba
+  [ -f "$PROFILES_JSON" ] || { echo "Brak pliku profili."; return; }
+  fix_profiles_json
+  VENV_PY="$(venv_python)"
+  echo "Dostepne profile:"
+  "$VENV_PY" -c "import json; [print(f\"{i+1}) {p['name']}\") for i,p in enumerate(json.load(open('$PROFILES_JSON')))]"
   echo
-  read -p "$(txt select_profile_prompt) " CHOICE
-  PROFILE_NAME=$(jq -r ".profiles[$((CHOICE-1))].name" "$PROFILES_JSON")
-
-  mkdir -p "$(dirname "$SETTINGS_JSON")"
+  read -p "Wybierz numer: " CHOICE
+  PROFILE_NAME="$("$VENV_PY" -c "import json; p=json.load(open('$PROFILES_JSON')); print(p[$((CHOICE-1))]['name'])")"
   touch "$SETTINGS_JSON"
-  if [ ! -s "$SETTINGS_JSON" ]; then
-    echo '{}' > "$SETTINGS_JSON"
-  fi
-
-  TMP=$(mktemp)
-  jq --arg name "$PROFILE_NAME" '.profile_name = $name' "$SETTINGS_JSON" > "$TMP"
-  mv "$TMP" "$SETTINGS_JSON"
-
-  sudo systemctl restart "${SERVICE_NAME}" || true
-  echo -e "${GREEN}Active profile: ${PROFILE_NAME}${RESET}"
+  [ -s "$SETTINGS_JSON" ] || echo "{}" > "$SETTINGS_JSON"
+  "$VENV_PY" - "$SETTINGS_JSON" "$PROFILE_NAME" <<'PYEOF'
+import json,sys
+path,name=sys.argv[1],sys.argv[2]
+with open(path) as f: s=json.load(f)
+s['profile_name']=name
+with open(path,'w') as f: json.dump(s,f,indent=2)
+print(f'  - Aktywny profil: {name}')
+PYEOF
+  sudo systemctl restart "${SERVICE_NAME}.service" 2>/dev/null || true
+  echo -e "${GREEN}  - Daemon zrestartowany z profilem: ${PROFILE_NAME}${RESET}"
 }
 
-# ---------- Edit .env ----------
 edit_env() {
-  if [ ! -f "$ENV_FILE" ]; then
-    echo -e "${RED}No .env file: $ENV_FILE${RESET}"
-    return
-  fi
-
-  echo -e "${CYAN}Current .env values:${RESET}"
-  grep -E '^(MOLTBOOK_API_KEY|OPENAI_API_KEY|MOLTBOOK_API_NAME)=' "$ENV_FILE" || true
+  if [ ! -f "$ENV_FILE" ]; then echo "Brak .env"; return; fi
+  echo "Aktualne klucze:"
+  grep -E "^(MOLTBOOK_API_KEY|OPENAI_API_KEY|MOLTBOOK_API_NAME)=" "$ENV_FILE" | sed 's/=.*/=****/' || true
   echo
-  echo "$(txt env_menu1)"
-  echo "$(txt env_menu2)"
-  echo "$(txt env_menu3)"
-  read -p "> " choice
-
-  case "$choice" in
-    1)
-      ${EDITOR:-nano} "$ENV_FILE"
-      ;;
+  echo "1) Edytuj w nano"
+  echo "2) Szybka aktualizacja"
+  echo "3) Powrot"
+  read -p "> " ch
+  case "$ch" in
+    1) ${EDITOR:-nano} "$ENV_FILE" ;;
     2)
-      read -p "$(txt ask_molt) " NEW_MOLT
-      read -p "$(txt ask_openai) " NEW_OPENAI
-      read -p "$(txt ask_api_name) " NEW_NAME
-
-      cp "$ENV_FILE" "${ENV_FILE}.bak.$(date +%s)"
-
-      set_kv_env() {
-        local key="$1"
-        local val="$2"
-        [ -z "$val" ] && return
-        if grep -q "^${key}=" "$ENV_FILE"; then
-          sed -i "s/^${key}=.*/${key}=${val}/" "$ENV_FILE"
-        else
-          echo "${key}=${val}" >> "$ENV_FILE"
-        fi
-      }
-
-      set_kv_env "MOLTBOOK_API_KEY" "$NEW_MOLT"
-      set_kv_env "OPENAI_API_KEY" "$NEW_OPENAI"
-      set_kv_env "MOLTBOOK_API_NAME" "$NEW_NAME"
-
-      echo -e "${GREEN}Updated .env${RESET}"
-      ;;
-    *)
-      ;;
+      read -p "MOLTBOOK_API_KEY (puste=zachowaj): " NM
+      read -p "OPENAI_API_KEY (puste=zachowaj): " NO
+      read -p "MOLTBOOK_API_NAME (puste=zachowaj): " NN
+      cp "$ENV_FILE" "${ENV_FILE}.bak.$(date +%s)" 2>/dev/null || true
+      set_kv "MOLTBOOK_API_KEY" "$NM"
+      set_kv "OPENAI_API_KEY" "$NO"
+      set_kv "MOLTBOOK_API_NAME" "$NN"
+      echo -e "${GREEN}  - .env zaktualizowany${RESET}"
+      sudo systemctl restart "${SERVICE_NAME}.service" 2>/dev/null || true
+    ;;
   esac
 }
 
-# ---------- Autostart on/off ----------
 toggle_autostart() {
   local enabled
-  enabled=$(systemctl is-enabled "${SERVICE_NAME}" 2>/dev/null || echo "disabled")
+  enabled=$(systemctl is-enabled "${SERVICE_NAME}.service" 2>/dev/null || echo "disabled")
   if [ "$enabled" = "enabled" ]; then
-    read -p "$(txt autostart_on) " ans
-    case "$ans" in
-      y|Y)
-        sudo systemctl disable "${SERVICE_NAME}.service"
-        sudo systemctl stop "${SERVICE_NAME}.service" || true
-        echo -e "${YELLOW}$(txt autostart_now_off)${RESET}"
-        ;;
-    esac
+    read -p "Autostart WLACZONY. Wylaczyc? (y/n): " ans
+    if [ "$ans" = "y" ] || [ "$ans" = "Y" ]; then
+      sudo systemctl disable "${SERVICE_NAME}.service"
+      sudo systemctl stop "${SERVICE_NAME}.service" 2>/dev/null || true
+      echo -e "${YELLOW}Autostart wylaczony.${RESET}"
+    fi
   else
-    read -p "$(txt autostart_off) " ans
-    case "$ans" in
-      y|Y)
-        sudo systemctl enable "${SERVICE_NAME}.service"
-        sudo systemctl restart "${SERVICE_NAME}.service"
-        echo -e "${GREEN}$(txt autostart_now_on)${RESET}"
-        ;;
-    esac
+    read -p "Autostart WYLACZONY. Wlaczyc? (y/n): " ans
+    if [ "$ans" = "y" ] || [ "$ans" = "Y" ]; then
+      sudo systemctl enable "${SERVICE_NAME}.service"
+      sudo systemctl restart "${SERVICE_NAME}.service"
+      echo -e "${GREEN}Autostart wlaczony.${RESET}"
+    fi
   fi
 }
 
-# ---------- Logs ----------
 tail_logs() {
-  echo -e "${MAGENTA}$(txt logs_info)${RESET}"
-  touch "$LOG_FILE"
-  tail -f "$LOG_FILE"
+  echo -e "${MAGENTA}Podglad logow (Ctrl+C aby wyjsc):${RESET}"
+  touch "$HISTORY_LOG" "$LOG_FILE" 2>/dev/null || true
+  tail -f "$HISTORY_LOG" "$LOG_FILE"
 }
 
-# ---------- Reindex ----------
 reindex_history() {
-  echo -e "${YELLOW}$(txt reindex_info)${RESET}"
-  cd "${AUTO_DIR}"
-  source .venv/bin/activate
-  python3 indexer_client.py --reindex-from-history
-  echo -e "${GREEN}$(txt reindex_stats)${RESET}"
+  echo -e "${YELLOW}Reindeksacja z historii...${RESET}"
+  VENV_PY="$(venv_python)"
+  if [ -f "${AUTO_DIR}/indexer_client.py" ]; then
+    cd "${AUTO_DIR}"
+    "$VENV_PY" indexer_client.py --reindex-from-history || echo "  - reindex zakonczony"
+  else
+    echo -e "${RED}Brak indexer_client.py${RESET}"
+  fi
 }
 
-# ---------- Language + menu ----------
-choose_language
+choose_language() {
+  echo -e "${BOLD}${CYAN}== MBC20 Daemon manager (folder: ${APP_BASENAME}) ==${RESET}"
+  echo
+  echo "Select language / Wybierz jezyk:"
+  echo "  1) English"
+  echo "  2) Polski"
+  read -p "> " lc
+  case "$lc" in
+    2) LANG="pl" ;;
+    *) LANG="en" ;;
+  esac
+}
 
 main_menu() {
   while true; do
     echo
-    echo -e "${BOLD}${CYAN}$(txt main_menu)${RESET}"
-    echo -e "${YELLOW}$(txt m_install)${RESET}"
-    echo -e "${YELLOW}$(txt m_add_profile)${RESET}"
-    echo -e "${YELLOW}$(txt m_edit_profile)${RESET}"
-    echo -e "${YELLOW}$(txt m_delete_profile)${RESET}"
-    echo -e "${YELLOW}$(txt m_select_profile)${RESET}"
-    echo -e "${YELLOW}$(txt m_logs)${RESET}"
-    echo -e "${YELLOW}$(txt m_env)${RESET}"
-    echo -e "${YELLOW}$(txt m_autostart)${RESET}"
-    echo -e "${YELLOW}$(txt m_reindex)${RESET}"
-    echo -e "${YELLOW}$(txt m_exit)${RESET}"
+    echo -e "${BOLD}${CYAN}== MBC20 Daemon menu (${APP_BASENAME}) ==${RESET}"
+    echo -e "${YELLOW}1) Zainstaluj / odswiez daemon${RESET}"
+    echo -e "${YELLOW}2) Dodaj profil tokena${RESET}"
+    echo -e "${YELLOW}3) Edytuj profil tokena${RESET}"
+    echo -e "${YELLOW}4) Usun profil tokena${RESET}"
+    echo -e "${YELLOW}5) Wybierz aktywny profil${RESET}"
+    echo -e "${YELLOW}6) Podglad logow daemona${RESET}"
+    echo -e "${YELLOW}7) Edytuj .env (API keys)${RESET}"
+    echo -e "${YELLOW}8) Wlacz / wylacz autostart${RESET}"
+    echo -e "${YELLOW}9) Reindeksuj z historii${RESET}"
+    echo -e "${YELLOW}10) Wyjscie${RESET}"
     echo
-    read -p "$(txt prompt_choice): " choice
+    STATUS=$(systemctl is-active "${SERVICE_NAME}.service" 2>/dev/null || echo "inactive")
+    if [ "$STATUS" = "active" ]; then
+      echo -e "  Daemon: ${GREEN}AKTYWNY${RESET} | ${SERVICE_NAME}"
+    else
+      echo -e "  Daemon: ${RED}NIEAKTYWNY${RESET} | ${SERVICE_NAME}"
+    fi
+    echo
+    read -p "Wybierz opcje: " choice
     case "$choice" in
-      1) install_headless ;;
-      2) add_profile ;;
-      3) edit_profile ;;
-      4) delete_profile ;;
-      5) select_profile ;;
-      6) tail_logs ;;
-      7) edit_env ;;
-      8) toggle_autostart ;;
-      9) reindex_history ;;
+      1)  install_headless ;;
+      2)  add_profile ;;
+      3)  edit_profile ;;
+      4)  delete_profile ;;
+      5)  select_profile ;;
+      6)  tail_logs ;;
+      7)  edit_env ;;
+      8)  toggle_autostart ;;
+      9)  reindex_history ;;
       10) exit 0 ;;
-      *) ;;
+      *)  ;;
     esac
   done
 }
 
+choose_language
 main_menu
