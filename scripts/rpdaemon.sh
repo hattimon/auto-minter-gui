@@ -63,14 +63,21 @@ else:
 PYEOF
 }
 
+# set_kv: puste = zostaw stara wartosc, z logiem
 set_kv() {
   local key="$1" val="$2"
-  [ -z "$val" ] && return 0
+  if [ -z "$val" ]; then
+    echo "  - ${key}: pozostawiono istniejaca wartosc (puste wejscie)"
+    return 0
+  fi
+  mkdir -p "${AUTO_DIR}"
   touch "$ENV_FILE"
   if grep -q "^${key}=" "$ENV_FILE" 2>/dev/null; then
     sed -i "s|^${key}=.*|${key}=${val}|" "$ENV_FILE"
+    echo "  - ${key}: zaktualizowano"
   else
     echo "${key}=${val}" >> "$ENV_FILE"
+    echo "  - ${key}: ustawiono po raz pierwszy"
   fi
 }
 
@@ -78,6 +85,7 @@ install_headless() {
   echo -e "${YELLOW}Instalacja / aktualizacja headless daemona...${RESET}"
   sudo apt-get update -qq
   sudo apt-get install -y git python3 python3-venv python3-dev jq build-essential curl
+
   if [ ! -d "${AUTO_DIR}/.git" ]; then
     echo "  - klonowanie repo..."
     git clone "${REPO_URL}" "${AUTO_DIR}"
@@ -85,26 +93,80 @@ install_headless() {
     echo "  - aktualizacja repo..."
     cd "${AUTO_DIR}" && git pull && cd "${APP_DIR}"
   fi
+
+  # od razu popraw wlasciciela repo
+  sudo chown -R "${APP_USER}:${APP_USER}" "${AUTO_DIR}" 2>/dev/null || true
+
   cd "${AUTO_DIR}"
   if [ ! -d ".venv" ]; then
     echo "  - tworzenie venv..."
     python3 -m venv .venv
   fi
+
   VENV_PY="$(venv_python)"
   echo "  - venv python: ${VENV_PY}"
   echo "  - instalacja zaleznosci: requests, python-dotenv, psutil..."
   "$VENV_PY" -m pip install --upgrade pip --quiet
   "$VENV_PY" -m pip install requests python-dotenv psutil --quiet
   echo -e "${GREEN}  - zaleznosci OK${RESET}"
-  touch "$ENV_FILE"
+
+  mkdir -p "${AUTO_DIR}"
+
+  # inicjalizacja .env (po chown)
+  if [ ! -f "$ENV_FILE" ]; then
+    cat > "$ENV_FILE" <<EOF
+MOLTBOOK_API_KEY=
+OPENAI_API_KEY=
+MOLTBOOK_API_NAME=
+EOF
+    echo "  - utworzono nowy plik .env: $ENV_FILE"
+  else
+    echo "  - wykryto istniejacy .env: $ENV_FILE"
+  fi
   cp "$ENV_FILE" "${ENV_FILE}.bak.$(date +%s)" 2>/dev/null || true
+  echo "  - backup .env zapisany"
+
+  OLD_MOLT=$(grep '^MOLTBOOK_API_KEY=' "$ENV_FILE" 2>/dev/null | cut -d= -f2-)
+  OLD_OPENAI=$(grep '^OPENAI_API_KEY=' "$ENV_FILE" 2>/dev/null | cut -d= -f2-)
+  OLD_NAME=$(grep '^MOLTBOOK_API_NAME=' "$ENV_FILE" 2>/dev/null | cut -d= -f2-)
+
   echo
-  read -p "MOLTBOOK_API_KEY (puste=bez zmiany): " NEW_MOLT
-  read -p "OPENAI_API_KEY (puste=brak/bez zmiany): " NEW_OPENAI
-  read -p "MOLTBOOK_API_NAME (przyjazna nazwa): " NEW_NAME
-  set_kv "MOLTBOOK_API_KEY" "$NEW_MOLT"
+
+  # MOLTBOOK_API_KEY: wymus przy pierwszej instalacji
+  if [ -z "$OLD_MOLT" ]; then
+    echo "Brak MOLTBOOK_API_KEY w .env – musisz podac wartosc."
+    while true; do
+      read -p "MOLTBOOK_API_KEY: " NEW_MOLT
+      if [ -n "$NEW_MOLT" ]; then
+        set_kv "MOLTBOOK_API_KEY" "$NEW_MOLT"
+        break
+      else
+        echo "  - MOLTBOOK_API_KEY nie moze byc pusty (daemon tego wymaga)."
+      fi
+    done
+  else
+    echo "MOLTBOOK_API_KEY jest juz ustawiony (pokazywany jako ****)."
+    read -p "MOLTBOOK_API_KEY (puste = zachowaj aktualny): " NEW_MOLT
+    set_kv "MOLTBOOK_API_KEY" "$NEW_MOLT"
+  fi
+
+  # OPENAI_API_KEY – opcjonalny
+  if [ -n "$OLD_OPENAI" ]; then
+    echo "OPENAI_API_KEY jest juz ustawiony (****)."
+  fi
+  read -p "OPENAI_API_KEY (puste = zachowaj / brak): " NEW_OPENAI
   set_kv "OPENAI_API_KEY" "$NEW_OPENAI"
+
+  # MOLTBOOK_API_NAME – przyjazna nazwa
+  if [ -n "$OLD_NAME" ]; then
+    echo "MOLTBOOK_API_NAME obecnie: $OLD_NAME"
+  fi
+  read -p "MOLTBOOK_API_NAME (puste = zachowaj / ustaw pozniej): " NEW_NAME
   set_kv "MOLTBOOK_API_NAME" "$NEW_NAME"
+
+  echo "  - aktualny stan .env:"
+  grep -E "^(MOLTBOOK_API_KEY|OPENAI_API_KEY|MOLTBOOK_API_NAME)=" "$ENV_FILE" || echo "  (brak wpisow)"
+
   if [ ! -f "$PROFILES_JSON" ] || [ ! -s "$PROFILES_JSON" ]; then
     echo "  - brak profili, tworzenie pierwszego..."
     add_profile
@@ -112,7 +174,9 @@ install_headless() {
     fix_profiles_json
     fix_profile_fields
   fi
+
   rm -f "${AUTO_DIR}/mbc20_daemon.lock"
+
   if [ ! -f "$SETTINGS_JSON" ] || [ ! -s "$SETTINGS_JSON" ]; then
     FIRST_PROFILE="$("$VENV_PY" -c "
 import json
@@ -135,6 +199,7 @@ print(p[0]['name'] if p else '')
 JSONEOF
     echo "  - settings.json utworzono (profil: ${FIRST_PROFILE})"
   fi
+
   cat > "${APP_DIR}/start_daemon.sh" << STARTEOF
 #!/bin/bash
 cd "${AUTO_DIR}"
@@ -142,6 +207,7 @@ ${VENV_PY} mbc20_auto_daemon.py >> "${LOG_FILE}" 2>&1
 STARTEOF
   chmod +x "${APP_DIR}/start_daemon.sh"
   echo "  - start_daemon.sh OK (python: ${VENV_PY})"
+
   SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
   sudo tee "$SERVICE_FILE" > /dev/null << SVCEOF
 [Unit]
@@ -161,6 +227,10 @@ StartLimitBurst=5
 [Install]
 WantedBy=multi-user.target
 SVCEOF
+
+  # drugi chown na wszelki wypadek (logi, .env, itd.)
+  sudo chown -R "${APP_USER}:${APP_USER}" "${AUTO_DIR}" "${LOG_FILE}" 2>/dev/null || true
+
   sudo systemctl daemon-reload
   sudo systemctl enable "${SERVICE_NAME}.service"
   sudo systemctl restart "${SERVICE_NAME}.service"
