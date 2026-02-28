@@ -8,7 +8,9 @@
 # 🍓 daemonRPi – Installation and Configuration (Multi-Instance)
 
 Installer script:  
-https://github.com/hattimon/auto-minter-gui/blob/main/scripts/rpdaemon.sh
+https://github.com/hattimon/auto-minter-gui/blob/main/scripts/rpdaemon.sh   
+
+![RPIdaemonEN.png](docs/screenshots/RPIdaemonEN.png)
 
 # 🇬🇧 English Version
 
@@ -90,7 +92,9 @@ ps aux | grep mbc20_auto_daemon.py | grep -v grep
 # 🍓 daemonRPi -- Instalacja i konfiguracja (Multi-Instance)
 
 Skrypt instalacyjny:
-https://github.com/hattimon/auto-minter-gui/blob/main/scripts/rpdaemon_pl.sh
+https://github.com/hattimon/auto-minter-gui/blob/main/scripts/rpdaemon_pl.sh   
+
+![RPIdaemonPL.png](docs/screenshots/RPIdaemonPL.png)
 
 ------------------------------------------------------------------------
 <a id="polski"></a>
