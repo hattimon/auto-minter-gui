@@ -1,3 +1,10 @@
+**Choose language / Wybierz język:**  
+👉 [English](#english)   👉 [Polski](#polski)  
+
+---
+
+<a id="english"></a>
+
 # 🇬🇧 English Version
 
 ## 🧠 Overview
@@ -64,6 +71,7 @@ Skrypt instalacyjny:
 https://github.com/hattimon/auto-minter-gui/blob/main/scripts/rpdaemon.sh
 
 ------------------------------------------------------------------------
+<a id="polski"></a>
 
 # 🇵🇱 Wersja Polska
 
