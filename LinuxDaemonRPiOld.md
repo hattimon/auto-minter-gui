@@ -6,10 +6,10 @@
 <a id="english"></a>
 # 🇬🇧 English Version
 
-# 💠 mbc20_daemon.sh – Universal Headless Daemon (Multi-Instance)
+# 💠 mbc20_daemon_en.sh – Universal Headless Daemon (Multi-Instance)
 
 Installer script:
-https://github.com/hattimon/auto-minter-gui/blob/main/scripts/mbc20_daemon.sh
+https://github.com/hattimon/auto-minter-gui/blob/main/scripts/mbc20_daemon_en.sh
 
 Works on:
 
@@ -42,14 +42,14 @@ cd Daemon1
 ### 2️⃣ Download script
 
 ```bash
-curl -s https://raw.githubusercontent.com/hattimon/auto-minter-gui/main/scripts/mbc20_daemon.sh -o mbc20_daemon.sh
-chmod +x mbc20_daemon.sh
+curl -s https://raw.githubusercontent.com/hattimon/auto-minter-gui/main/scripts/mbc20_daemon_en.sh -o mbc20_daemon_en.sh
+chmod +x mbc20_daemon_en.sh
 ```
 
 ### 3️⃣ Run installer
 
 ```bash
-./mbc20_daemon.sh
+./mbc20_daemon_en.sh
 ```
 
 The script will:
@@ -79,9 +79,9 @@ During option `1` in the menu you will be asked for:
 cd ~
 mkdir -p Daemon2
 cd Daemon2
-cp ~/mbc20_daemon.sh .
-chmod +x mbc20_daemon.sh
-./mbc20_daemon.sh
+cp ~/mbc20_daemon_en.sh .
+chmod +x mbc20_daemon_en.sh
+./mbc20_daemon_en.sh
 ```
 
 Result:
@@ -98,7 +98,7 @@ Repeat for `Daemon3`, `Daemon4`, etc.
 
 ```bash
 cd ~/Daemon1
-./mbc20_daemon.sh
+./mbc20_daemon_en.sh
 ```
 
 ```text
