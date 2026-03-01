@@ -21,19 +21,31 @@ a także konfigurowalnym **daemonem MBC20**, który uruchamia auto-mint w tle, k
 
 ***
 
-## 🍓 Opcjonalnie: MBC20 Daemon (Raspberry Pi / Linux)
+## 🍓 Opcjonalny: MBC20 Daemon (Raspberry Pi)
 
-Jeśli chcesz, aby Auto-Mint działał w tle na Raspberry Pi (obsługa headless), możesz zainstalować opcjonalny **daemon MBC20** jako usługę systemową systemd.
+Jeśli chcesz, aby Auto-Mint działał ciągle w tle na Raspberry Pi (z obsługą trybu headless), możesz zainstalować opcjonalny **MBC20 daemon** jako usługę systemową.
 
-- Korzysta z tych samych plików współdzielonych co GUI:
-  `mbc20_profiles.json`, `mbc20_daemon_settings.json`, `mbc20_history.log`
-- Działa całkowicie w tle (możliwość instalacji przez SSH)
-- Obsługuje wiele niezależnych instancji (np. `Daemon1`, `Daemon2`)
-- Każdy folder tworzy własną usługę (nazwaną według katalogu) – brak konfliktów
+- Używa tych samych plików współdzielonych co główny GUI: `mbc20_profiles.json`, `mbc20_daemon_settings.json`, `mbc20_history.log`
+- Działa całkowicie w tle (zgodny z SSH, bez potrzeby środowiska graficznego)
+- Każdy katalog Auto-Mint tworzy własną instancję usługi (np. `Daemon1`, `Daemon2`)
 
-Pobierz skrypt instalacyjny do wybranego folderu i uruchom go.
+Pobierz skrypt instalacyjny do docelowego katalogu i uruchom go.
 
-Pełna instrukcja instalacji znajduje się w pliku **[`daemonRPi.md`](daemonRPi.md)**.
+Pełną instrukcję instalacji i użycia znajdziesz w **[`daemonRPi.md`](daemonRPi.md)**.
+
+---
+
+## 🐧 Opcjonalny: MBC20 Daemon (Linux / starszy Raspbian)
+
+Jeśli chcesz uruchomić Auto-Mint 24/7 na standardowym Linuksie lub starszych wersjach Raspberry Pi OS / Raspbian, możesz użyć tego samego skryptu **MBC20 daemon** jako usługi działającej w tle.
+
+- Obsługuje Debian / Ubuntu / MX Linux (systemd lub SysVinit) oraz starsze wydania Raspbiana (Jessie, Stretch, Buster, Bullseye, Bookworm)
+- Współdzieli profile, ustawienia i historię z głównym GUI: `mbc20_profiles.json`, `mbc20_daemon_settings.json`, `mbc20_history.log`
+- Automatycznie instaluje zależności i rejestruje usługę do pracy w tle
+
+Pobierz skrypt instalacyjny do docelowego katalogu i uruchom go.
+
+Pełną instrukcję instalacji i użycia znajdziesz w **[`LinuxDaemonRPiOld.md`](LinuxDaemonRPiOld.md)**.
 
 ---
 
