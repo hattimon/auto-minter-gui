@@ -83,6 +83,7 @@ Szczegółowa instrukcja znajduje się w pliku **[`deamon.md`](./deamon.md)**.
 -   requests
 -   python-dotenv
 -   PyQt6
+-   psutil
 
 Instalacja:
 
