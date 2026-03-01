@@ -20,19 +20,31 @@ automatic Moltbook retry handling, mbc20.xyz indexer support,
 and a configurable **MBC20 daemon** that runs auto-mint in the background using shared profiles and settings.
 
 ***
-## 🍓 Optional: MBC20 Daemon (Raspberry Pi / Linux)
+## 🍓 Optional: MBC20 Daemon (Raspberry Pi)
 
-If you want Auto-Mint to run continuously in the background on Raspberry Pi (headless supported), you can install the optional **MBC20 daemon** as a systemd service.
+If you want Auto-Mint to run continuously in the background on Raspberry Pi (headless supported), you can install the optional **MBC20 daemon** as a system service.
 
-- Uses the same shared files as the main GUI:
-  `mbc20_profiles.json`, `mbc20_daemon_settings.json`, `mbc20_history.log`
-- Runs fully in the background (SSH compatible)
-- Supports multiple independent instances (e.g. `Daemon1`, `Daemon2`)
-- Each folder creates its own service (named after the folder) – no conflicts
+- Uses the same shared files as the main GUI: `mbc20_profiles.json`, `mbc20_daemon_settings.json`, `mbc20_history.log`
+- Runs fully in the background (SSH compatible, no desktop required)
+- Each Auto-Mint folder creates its own service instance (e.g. `Daemon1`, `Daemon2`)
 
 Download the installer script into your target folder and run it.
 
 See full installation and usage instructions in **[`daemonRPi.md`](daemonRPi.md)**.
+
+---
+
+## 🐧 Optional: MBC20 Daemon (Linux / older Raspbian)
+
+If you want Auto-Mint to run 24/7 on standard Linux or on older Raspberry Pi OS / Raspbian versions, you can use the same **MBC20 daemon** script as a background service.
+
+- Supports Debian / Ubuntu / MX Linux (systemd or SysVinit) and older Raspbian releases (Jessie, Stretch, Buster, Bullseye, Bookworm)
+- Shares profiles, settings and history with the main GUI: `mbc20_profiles.json`, `mbc20_daemon_settings.json`, `mbc20_history.log`
+- Automatically installs dependencies and registers the service for background auto-minting
+
+Download the installer script into your target folder and run it.
+
+See full installation and usage instructions in **[`LinuxDaemonRPiOld.md`](LinuxDaemonRPiOld.md)**.
 
 ---
 
