@@ -1,5 +1,5 @@
 #!/bin/bash
-# mbc20_daemon_pl.sh - Uniwersalny menedżer headless daemona MBC20 / Moltbook
+# mbc20_daemon_en.sh - Universal headless daemon manager for MBC20 / Moltbook
 # Debian 11/12, Ubuntu 20.04/22.04/24.04, Raspberry Pi OS, MX Linux 23 (SysVinit)
 set -e
 RED="\033[31m"; GREEN="\033[32m"; YELLOW="\033[33m"
@@ -16,7 +16,7 @@ PROFILES_JSON="${AUTO_DIR}/mbc20_profiles.json"
 SETTINGS_JSON="${AUTO_DIR}/mbc20_daemon_settings.json"
 HISTORY_LOG="${AUTO_DIR}/mbc20_history.log"
 PIDFILE="/var/run/${SERVICE_NAME}.pid"
-# Detekcja init
+# Init system detection
 INIT_COMM="$(ps -p 1 -o comm= 2>/dev/null || echo unknown)"
 USE_SYSTEMD=0
 if [ "$INIT_COMM" = "systemd" ]; then
@@ -38,9 +38,9 @@ p=sys.argv[1]
 with open(p) as f: d=json.load(f)
 if isinstance(d,dict) and 'profiles' in d:
   with open(p,'w') as f: json.dump(d['profiles'],f,indent=2)
-  print(' - profiles.json: przekonwertowano dict.profiles → lista')
+  print(' - profiles.json: converted dict.profiles → list')
 elif isinstance(d,list):
-  print(' - profiles.json: format poprawny')
+  print(' - profiles.json: format OK')
 PYEOF
 }
 fix_profile_fields() {
@@ -59,39 +59,39 @@ for prof in d:
     prof['amount_per_mint']=prof['amt']; changed=True
 if changed:
   with open(p,'w') as f: json.dump(d,f,indent=2)
-  print(' - profiles.json: dodano brakujące pola amt/amount_per_mint')
+  print(' - profiles.json: added missing fields amt/amount_per_mint')
 else:
-  print(' - profiles.json: pola w porządku')
+  print(' - profiles.json: fields OK')
 PYEOF
 }
 set_kv() {
   local key="$1" val="$2"
   if [ -z "$val" ]; then
-    echo " - ${key}: pozostawiono dotychczasową wartość (puste wejście)"
+    echo " - ${key}: keeping existing value (empty input)"
     return 0
   fi
   mkdir -p "${AUTO_DIR}"
   touch "$ENV_FILE"
   if grep -q "^${key}=" "$ENV_FILE" 2>/dev/null; then
     sed -i "s|^${key}=.*|${key}=${val}|" "$ENV_FILE"
-    echo " - ${key}: zaktualizowano"
+    echo " - ${key}: updated"
   else
     echo "${key}=${val}" >> "$ENV_FILE"
-    echo " - ${key}: ustawiono po raz pierwszy"
+    echo " - ${key}: set for the first time"
   fi
 }
 patch_daemon_script() {
   local script="${AUTO_DIR}/mbc20_auto_daemon.py"
   if [ ! -f "$script" ]; then
-    echo " - pomijam patch daemona: brak ${script}"
+    echo " - skipping daemon patch: missing ${script}"
     return 0
   fi
-  echo " - patchowanie mbc20_auto_daemon.py (configure_moltbook_api + extra_comment + main)..."
+  echo " - patching mbc20_auto_daemon.py (configure_moltbook_api + extra_comment + main)..."
   python3 - "$script" <<'PYEOF'
 import sys, re
 path = sys.argv[1]
 text = open(path, encoding="utf-8").read()
-# 1) usun stare configure_moltbook_api
+# 1) remove old configure_moltbook_api
 text, n_del = re.subn(
     r'^def configure_moltbook_api\(\):[^\n]*\n(?:^[ \t]+.*\n)*',
     '',
@@ -99,7 +99,7 @@ text, n_del = re.subn(
     flags=re.MULTILINE
 )
 if n_del:
-    print(f" Usunięto {n_del} starych definicji configure_moltbook_api().")
+    print(f" Removed {n_del} old definitions of configure_moltbook_api().")
 new_conf_block = '''
 # ---------- Moltbook / API ----------
 def configure_moltbook_api():
@@ -113,32 +113,32 @@ def configure_moltbook_api():
 insert_pat = r'(from dotenv import load_dotenv[^\n]*\n)'
 new_text, n_ins = re.subn(insert_pat, r'\1\n' + new_conf_block, text, count=1)
 if n_ins:
-    print(" Wstawiono nowy configure_moltbook_api() za importem load_dotenv.")
+    print(" Inserted new configure_moltbook_api() after load_dotenv import.")
     text = new_text
 else:
     text = new_conf_block + '\n\n' + text
-    print(" Wstawiono configure_moltbook_api() na początku pliku.")
+    print(" Inserted configure_moltbook_api() at the beginning of the file.")
 # 2) get_post_description -> extra_comment
 pattern_desc = r'^def get_post_description\([^\n]*\n(?:^[ \t]+.*\n)*'
 replacement_desc = '''
 def get_post_description(profile: dict) -> str:
-    # używa extra_comment z profilu tworzonego przez skrypt shell
+    # uses extra_comment from profile created by shell script
     return profile.get("extra_comment", "")
 '''.lstrip('\n')
 new_text2, n_desc = re.subn(pattern_desc, replacement_desc, text, flags=re.MULTILINE)
 if n_desc:
-    print(" Podmieniono get_post_description() aby używał extra_comment.")
+    print(" Replaced get_post_description() to use extra_comment.")
     text = new_text2
 else:
     text += '\n\n' + replacement_desc
-    print(" Dodano get_post_description() korzystający z extra_comment.")
-# 3) nowy main()
+    print(" Added get_post_description() using extra_comment.")
+# 3) new main()
 main_cut_pattern = r'^def main\([^\n]*\n(?:.|\n)*$'
 text, n_cut = re.subn(main_cut_pattern, '', text, flags=re.MULTILINE)
 if n_cut:
-    print(" Usunięto stary blok main().")
+    print(" Removed old main() block.")
 else:
-    print(" (Uwaga: nie znaleziono main(); dodajemy nowy).")
+    print(" (Note: main() not found; adding new one).")
 new_main_block = '''
 def is_another_daemon_running() -> bool:
     return False
@@ -170,29 +170,29 @@ open(path, "w", encoding="utf-8").write(text)
 PYEOF
 }
 install_headless() {
-  echo -e "${YELLOW}Instalacja / aktualizacja headless daemona...${RESET}"
+  echo -e "${YELLOW}Installing / updating headless daemon...${RESET}"
   sudo apt-get update -qq
   sudo apt-get install -y git python3 python3-venv python3-dev jq build-essential curl
   if [ ! -d "${AUTO_DIR}/.git" ]; then
-    echo " - klonowanie repozytorium..."
+    echo " - cloning repository..."
     git clone "${REPO_URL}" "${AUTO_DIR}"
   else
-    echo " - aktualizacja repozytorium..."
+    echo " - updating repository..."
     cd "${AUTO_DIR}" && git pull && cd "${APP_DIR}"
   fi
   sudo chown -R "${APP_USER}:${APP_USER}" "${AUTO_DIR}" 2>/dev/null || true
   patch_daemon_script
   cd "${AUTO_DIR}"
   if [ ! -d ".venv" ]; then
-    echo " - tworzenie środowiska wirtualnego..."
+    echo " - creating virtual environment..."
     python3 -m venv .venv
   fi
   VENV_PY="$(venv_python)"
-  echo " - python z venv: ${VENV_PY}"
-  echo " - instalacja zależności: requests, python-dotenv, psutil..."
+  echo " - python from venv: ${VENV_PY}"
+  echo " - installing dependencies: requests, python-dotenv, psutil..."
   "$VENV_PY" -m pip install --upgrade pip --quiet
   "$VENV_PY" -m pip install requests python-dotenv psutil --quiet
-  echo -e "${GREEN} - zależności zainstalowane${RESET}"
+  echo -e "${GREEN} - dependencies OK${RESET}"
   mkdir -p "${AUTO_DIR}"
   if [ ! -f "$ENV_FILE" ]; then
     cat > "$ENV_FILE" <<EOF
@@ -200,46 +200,46 @@ MOLTBOOK_API_KEY=
 OPENAI_API_KEY=
 MOLTBOOK_API_NAME=
 EOF
-    echo " - utworzono nowy plik .env: $ENV_FILE"
+    echo " - created new .env file: $ENV_FILE"
   else
-    echo " - wykryto istniejący plik .env: $ENV_FILE"
+    echo " - detected existing .env file: $ENV_FILE"
   fi
   cp "$ENV_FILE" "${ENV_FILE}.bak.$(date +%s)" 2>/dev/null || true
-  echo " - wykonano kopię zapasową .env"
+  echo " - .env backup created"
   OLD_MOLT=$(grep '^MOLTBOOK_API_KEY=' "$ENV_FILE" 2>/dev/null | cut -d= -f2-)
   OLD_OPENAI=$(grep '^OPENAI_API_KEY=' "$ENV_FILE" 2>/dev/null | cut -d= -f2-)
   OLD_NAME=$(grep '^MOLTBOOK_API_NAME=' "$ENV_FILE" 2>/dev/null | cut -d= -f2-)
   echo
   if [ -z "$OLD_MOLT" ]; then
-    echo "MOLTBOOK_API_KEY w pliku .env jest pusty – musisz podać wartość."
+    echo "MOLTBOOK_API_KEY in .env is empty – you must provide a value."
     while true; do
       read -p "MOLTBOOK_API_KEY: " NEW_MOLT
       if [ -n "$NEW_MOLT" ]; then
         set_kv "MOLTBOOK_API_KEY" "$NEW_MOLT"
         break
       else
-        echo " - MOLTBOOK_API_KEY nie może być pusty (wymagane przez daemona)."
+        echo " - MOLTBOOK_API_KEY cannot be empty (required by daemon)."
       fi
     done
   else
-    echo "MOLTBOOK_API_KEY jest już ustawiony (****)."
-    read -p "MOLTBOOK_API_KEY (puste = zachowaj): " NEW_MOLT
+    echo "MOLTBOOK_API_KEY is already set (****)."
+    read -p "MOLTBOOK_API_KEY (empty = keep current): " NEW_MOLT
     set_kv "MOLTBOOK_API_KEY" "$NEW_MOLT"
   fi
   if [ -n "$OLD_OPENAI" ]; then
-    echo "OPENAI_API_KEY jest już ustawiony (****)."
+    echo "OPENAI_API_KEY is already set (****)."
   fi
-  read -p "OPENAI_API_KEY (puste = zachowaj / brak): " NEW_OPENAI
+  read -p "OPENAI_API_KEY (empty = keep / none): " NEW_OPENAI
   set_kv "OPENAI_API_KEY" "$NEW_OPENAI"
   if [ -n "$OLD_NAME" ]; then
-    echo "MOLTBOOK_API_NAME obecnie: $OLD_NAME"
+    echo "Current MOLTBOOK_API_NAME: $OLD_NAME"
   fi
-  read -p "MOLTBOOK_API_NAME (puste = zachowaj / ustaw później): " NEW_NAME
+  read -p "MOLTBOOK_API_NAME (empty = keep / set later): " NEW_NAME
   set_kv "MOLTBOOK_API_NAME" "$NEW_NAME"
-  echo " - aktualny stan pliku .env:"
-  grep -E "^(MOLTBOOK_API_KEY|OPENAI_API_KEY|MOLTBOOK_API_NAME)=" "$ENV_FILE" || echo " (brak wpisów)"
+  echo " - current .env status:"
+  grep -E "^(MOLTBOOK_API_KEY|OPENAI_API_KEY|MOLTBOOK_API_NAME)=" "$ENV_FILE" || echo " (no entries)"
   if [ ! -f "$PROFILES_JSON" ] || [ ! -s "$PROFILES_JSON" ]; then
-    echo " - brak profili, tworzenie pierwszego..."
+    echo " - no profiles found, creating the first one..."
     add_profile
   else
     fix_profiles_json
@@ -263,12 +263,12 @@ print(p[0]['name'] if p else '')
   "use_static_backoff_for_other_errors": true,
   "static_backoff_minutes": 31,
   "start_daemon_on_launch": true,
-  "language": "pl"
+  "language": "en"
 }
 JSONEOF
-    echo " - plik settings.json utworzony (profil: ${FIRST_PROFILE})"
+    echo " - settings.json created (profile: ${FIRST_PROFILE})"
   fi
-  # start_daemon.sh – PID = python child (działa zarówno z systemd jak i init.d)
+  # start_daemon.sh – captures python child PID (works with both systemd and init.d)
   cat > "${APP_DIR}/start_daemon.sh" << EOF
 #!/bin/bash
 PIDFILE="${PIDFILE}"
@@ -284,9 +284,9 @@ rm -f "\$PIDFILE"
 EOF
   chmod +x "${APP_DIR}/start_daemon.sh"
   sudo chown "${APP_USER}:${APP_USER}" "${APP_DIR}/start_daemon.sh" 2>/dev/null || true
-  echo " - start_daemon.sh przygotowany (python: ${VENV_PY})"
+  echo " - start_daemon.sh prepared (python: ${VENV_PY})"
   if [ "$USE_SYSTEMD" -eq 1 ]; then
-    echo " - wykryto systemd, tworzenie usługi..."
+    echo " - systemd detected, creating service..."
     SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
     sudo tee "$SERVICE_FILE" > /dev/null << SVCEOF
 [Unit]
@@ -309,11 +309,11 @@ SVCEOF
     sudo systemctl enable "${SERVICE_NAME}.service"
     sudo systemctl restart "${SERVICE_NAME}.service"
     echo
-    echo -e "${GREEN}Gotowe (systemd).${RESET}"
-    echo -e "${CYAN} Logi: tail -f ${HISTORY_LOG}${RESET}"
-    echo -e "${CYAN} Status: systemctl status ${SERVICE_NAME}${RESET}"
+    echo -e "${GREEN}Done (systemd).${RESET}"
+    echo -e "${CYAN}Logs: tail -f ${HISTORY_LOG}${RESET}"
+    echo -e "${CYAN}Status: systemctl status ${SERVICE_NAME}${RESET}"
   else
-    echo " - wykryto SysVinit, tworzenie skryptu /etc/init.d/${SERVICE_NAME}..."
+    echo " - SysVinit detected, creating /etc/init.d/${SERVICE_NAME}..."
     sudo tee "/etc/init.d/${SERVICE_NAME}" > /dev/null << INITEOF
 #!/bin/sh
 ### BEGIN INIT INFO
@@ -330,11 +330,11 @@ PIDFILE="${PIDFILE}"
 LOGFILE="${LOG_FILE}"
 case "\$1" in
   start)
-    echo "Uruchamianie ${SERVICE_NAME}..."
+    echo "Starting ${SERVICE_NAME}..."
     start-stop-daemon --start --background --pidfile "\$PIDFILE" --chdir "\$DAEMON_DIR" --exec "\$DAEMON_SH"
     ;;
   stop)
-    echo "Zatrzymywanie ${SERVICE_NAME}..."
+    echo "Stopping ${SERVICE_NAME}..."
     start-stop-daemon --stop --retry=TERM/30/KILL/5 --pidfile "\$PIDFILE"
     rm -f "\$PIDFILE"
     ;;
@@ -345,15 +345,15 @@ case "\$1" in
     ;;
   status)
     if [ -f "\$PIDFILE" ] && kill -0 "\$(cat "\$PIDFILE")" 2>/dev/null; then
-      echo "${SERVICE_NAME} działa (pid \$(cat "\$PIDFILE"))"
+      echo "${SERVICE_NAME} is running (pid \$(cat "\$PIDFILE"))"
       exit 0
     else
-      echo "${SERVICE_NAME} nie jest uruchomiony"
+      echo "${SERVICE_NAME} is not running"
       exit 3
     fi
     ;;
   *)
-    echo "Użycie: /etc/init.d/${SERVICE_NAME} {start|stop|restart|status}"
+    echo "Usage: /etc/init.d/${SERVICE_NAME} {start|stop|restart|status}"
     exit 1
     ;;
 esac
@@ -363,9 +363,9 @@ INITEOF
     sudo update-rc.d "${SERVICE_NAME}" defaults
     sudo service "${SERVICE_NAME}" restart || sudo service "${SERVICE_NAME}" start
     echo
-    echo -e "${GREEN}Gotowe (SysVinit).${RESET}"
-    echo -e "${CYAN} Logi: tail -f ${HISTORY_LOG}${RESET}"
-    echo -e "${CYAN} Status: sudo service ${SERVICE_NAME} status${RESET}"
+    echo -e "${GREEN}Done (SysVinit).${RESET}"
+    echo -e "${CYAN}Logs: tail -f ${HISTORY_LOG}${RESET}"
+    echo -e "${CYAN}Status: sudo service ${SERVICE_NAME} status${RESET}"
   fi
 }
 add_profile() {
@@ -376,13 +376,13 @@ add_profile() {
   fix_profiles_json
   VENV_PY="$(venv_python)"
   echo
-  read -p "Nazwa profilu (np. GPT-mint): " PROFILE_NAME
-  read -p "Ticker tokena (np. GPT): " TOKEN_TICK
-  read -p "Submolt (puste = mbc20): " SUBMOLT
+  read -p "Profile name (e.g. GPT-mint): " PROFILE_NAME
+  read -p "Token ticker (e.g. GPT): " TOKEN_TICK
+  read -p "Submolt (empty = mbc20): " SUBMOLT
   [ -z "$SUBMOLT" ] && SUBMOLT="mbc20"
-  read -p "Ilość na jeden mint (np. 100): " AMOUNT
-  read -p "Tytuł posta: " TITLE
-  read -p "Dodatkowy komentarz (puste = brak): " COMMENT
+  read -p "Amount per mint (e.g. 100): " AMOUNT
+  read -p "Post title: " TITLE
+  read -p "Extra comment (empty = none): " COMMENT
   RAND_ID=$(tr -dc A-Za-z0-9 </dev/urandom | head -c10)
   "$VENV_PY" - "$PROFILES_JSON" "$PROFILE_NAME" "$TOKEN_TICK" "$SUBMOLT" "$AMOUNT" "$TITLE" "$COMMENT" "$RAND_ID" <<'PYEOF'
 import json,sys
@@ -394,24 +394,24 @@ profiles.append({'name':name,'tick':tick,'submolt':submolt,
   'extra_comment':comment,'daemon_header_suffix':f'[Daemon {rand}]',
   'use_llm_only_for_riddles':True})
 with open(path,'w') as f: json.dump(profiles,f,indent=2)
-print(f' - Dodano profil: {name}')
+print(f' - Profile added: {name}')
 PYEOF
 }
 edit_profile() {
-  [ -f "$PROFILES_JSON" ] || { echo "Brak pliku z profilami."; return; }
+  [ -f "$PROFILES_JSON" ] || { echo "No profiles file found."; return; }
   fix_profiles_json
   VENV_PY="$(venv_python)"
-  echo "Dostępne profile:"
+  echo "Available profiles:"
   "$VENV_PY" -c "import json; [print(f\"{i+1}) {p['name']} tick={p.get('tick','')} amt={p.get('amt',p.get('amount_per_mint',''))}\") for i,p in enumerate(json.load(open('$PROFILES_JSON')))]"
   echo
-  read -p "Wybierz numer: " CHOICE
+  read -p "Select number: " CHOICE
   INDEX=$((CHOICE-1))
-  read -p "Nowa nazwa (puste = zachowaj): " NN
-  read -p "Nowy ticker (puste = zachowaj): " NT
-  read -p "Nowy submolt (puste = zachowaj): " NS
-  read -p "Nowa ilość (puste = zachowaj): " NA
-  read -p "Nowy tytuł (puste = zachowaj): " NTI
-  read -p "Nowy komentarz (puste = zachowaj): " NC
+  read -p "New name (empty = keep): " NN
+  read -p "New ticker (empty = keep): " NT
+  read -p "New submolt (empty = keep): " NS
+  read -p "New amount (empty = keep): " NA
+  read -p "New title (empty = keep): " NTI
+  read -p "New comment (empty = keep): " NC
   "$VENV_PY" - "$PROFILES_JSON" "$INDEX" "$NN" "$NT" "$NS" "$NA" "$NTI" "$NC" <<'PYEOF'
 import json,sys
 path,idx=sys.argv[1],int(sys.argv[2])
@@ -427,18 +427,18 @@ if na:
 if nti: r['title']=nti
 if nc: r['extra_comment']=nc
 with open(path,'w') as f: json.dump(p,f,indent=2)
-print(f' - Zaktualizowano profil: {r["name"]}')
+print(f' - Updated: {r["name"]}')
 PYEOF
 }
 delete_profile() {
-  [ -f "$PROFILES_JSON" ] || { echo "Brak pliku z profilami."; return; }
+  [ -f "$PROFILES_JSON" ] || { echo "No profiles file found."; return; }
   fix_profiles_json
   VENV_PY="$(venv_python)"
-  echo "Dostępne profile:"
+  echo "Available profiles:"
   "$VENV_PY" -c "import json; [print(f\"{i+1}) {p['name']}\") for i,p in enumerate(json.load(open('$PROFILES_JSON')))]"
   echo
-  read -p "Wybierz numer: " CHOICE
-  read -p "Na pewno usunąć? (y/n): " CONFIRM
+  read -p "Select number: " CHOICE
+  read -p "Really delete? (y/n): " CONFIRM
   if [ "$CONFIRM" = "y" ] || [ "$CONFIRM" = "Y" ]; then
     INDEX=$((CHOICE-1))
     "$VENV_PY" - "$PROFILES_JSON" "$INDEX" <<'PYEOF'
@@ -447,18 +447,18 @@ path,idx=sys.argv[1],int(sys.argv[2])
 with open(path) as f: p=json.load(f)
 rem=p.pop(idx)
 with open(path,'w') as f: json.dump(p,f,indent=2)
-print(f' - Usunięto profil: {rem["name"]}')
+print(f' - Deleted: {rem["name"]}')
 PYEOF
   fi
 }
 select_profile() {
-  [ -f "$PROFILES_JSON" ] || { echo "Brak pliku z profilami."; return; }
+  [ -f "$PROFILES_JSON" ] || { echo "No profiles file found."; return; }
   fix_profiles_json
   VENV_PY="$(venv_python)"
-  echo "Dostępne profile:"
+  echo "Available profiles:"
   "$VENV_PY" -c "import json; [print(f\"{i+1}) {p['name']}\") for i,p in enumerate(json.load(open('$PROFILES_JSON')))]"
   echo
-  read -p "Wybierz numer: " CHOICE
+  read -p "Select number: " CHOICE
   PROFILE_NAME="$("$VENV_PY" -c "import json; p=json.load(open('$PROFILES_JSON')); print(p[$((CHOICE-1))]['name'])")"
   touch "$SETTINGS_JSON"
   [ -s "$SETTINGS_JSON" ] || echo "{}" > "$SETTINGS_JSON"
@@ -468,35 +468,35 @@ path,name=sys.argv[1],sys.argv[2]
 with open(path) as f: s=json.load(f)
 s['profile_name']=name
 with open(path,'w') as f: json.dump(s,f,indent=2)
-print(f' - Aktywny profil: {name}')
+print(f' - Active profile: {name}')
 PYEOF
   if [ "$USE_SYSTEMD" -eq 1 ]; then
     sudo systemctl restart "${SERVICE_NAME}.service" 2>/dev/null || true
   else
     sudo service "${SERVICE_NAME}" restart 2>/dev/null || true
   fi
-  echo -e "${GREEN} - Daemon zrestartowany z profilem: ${PROFILE_NAME}${RESET}"
+  echo -e "${GREEN} - Daemon restarted with profile: ${PROFILE_NAME}${RESET}"
 }
 edit_env() {
-  if [ ! -f "$ENV_FILE" ]; then echo "Brak pliku .env"; return; fi
-  echo "Aktualne klucze (zamaskowane):"
+  if [ ! -f "$ENV_FILE" ]; then echo "No .env file found"; return; fi
+  echo "Current keys (masked):"
   grep -E "^(MOLTBOOK_API_KEY|OPENAI_API_KEY|MOLTBOOK_API_NAME)=" "$ENV_FILE" | sed 's/=.*/=****/' || true
   echo
-  echo "1) Edytuj w nano"
-  echo "2) Szybka zmiana wartości"
-  echo "3) Powrót"
+  echo "1) Edit with nano"
+  echo "2) Quick update"
+  echo "3) Back"
   read -p "> " ch
   case "$ch" in
     1) ${EDITOR:-nano} "$ENV_FILE" ;;
     2)
-      read -p "MOLTBOOK_API_KEY (puste=zachowaj): " NM
-      read -p "OPENAI_API_KEY (puste=zachowaj): " NO
-      read -p "MOLTBOOK_API_NAME (puste=zachowaj): " NN
+      read -p "MOLTBOOK_API_KEY (empty=keep): " NM
+      read -p "OPENAI_API_KEY (empty=keep): " NO
+      read -p "MOLTBOOK_API_NAME (empty=keep): " NN
       cp "$ENV_FILE" "${ENV_FILE}.bak.$(date +%s)" 2>/dev/null || true
       set_kv "MOLTBOOK_API_KEY" "$NM"
       set_kv "OPENAI_API_KEY" "$NO"
       set_kv "MOLTBOOK_API_NAME" "$NN"
-      echo -e "${GREEN} - plik .env zaktualizowany${RESET}"
+      echo -e "${GREEN} - .env updated${RESET}"
       if [ "$USE_SYSTEMD" -eq 1 ]; then
         sudo systemctl restart "${SERVICE_NAME}.service" 2>/dev/null || true
       else
@@ -510,85 +510,85 @@ toggle_autostart() {
     local enabled
     enabled=$(systemctl is-enabled "${SERVICE_NAME}.service" 2>/dev/null || echo "disabled")
     if [ "$enabled" = "enabled" ]; then
-      read -p "Autostart jest WLĄCZONY. Wyłączyć? (y/n): " ans
+      read -p "Autostart is ENABLED. Disable? (y/n): " ans
       if [ "$ans" = "y" ] || [ "$ans" = "Y" ]; then
         sudo systemctl disable "${SERVICE_NAME}.service"
         sudo systemctl stop "${SERVICE_NAME}.service" 2>/dev/null || true
-        echo -e "${YELLOW}Autostart wyłączony.${RESET}"
+        echo -e "${YELLOW}Autostart disabled.${RESET}"
       fi
     else
-      read -p "Autostart jest WYŁĄCZONY. Włączyć? (y/n): " ans
+      read -p "Autostart is DISABLED. Enable? (y/n): " ans
       if [ "$ans" = "y" ] || [ "$ans" = "Y" ]; then
         sudo systemctl enable "${SERVICE_NAME}.service"
         sudo systemctl restart "${SERVICE_NAME}.service"
-        echo -e "${GREEN}Autostart włączony.${RESET}"
+        echo -e "${GREEN}Autostart enabled.${RESET}"
       fi
     fi
   else
-    echo "SysVinit: sprawdzanie autostartu..."
+    echo "SysVinit: checking autostart..."
     if ls /etc/rc*.d/*"${SERVICE_NAME}"* >/dev/null 2>&1; then
-      read -p "Autostart jest WLĄCZONY. Wyłączyć? (y/n): " ans
+      read -p "Autostart is ENABLED. Disable? (y/n): " ans
       if [ "$ans" = "y" ] || [ "$ans" = "Y" ]; then
         sudo update-rc.d -f "${SERVICE_NAME}" remove
         sudo service "${SERVICE_NAME}" stop 2>/dev/null || true
-        echo -e "${YELLOW}Autostart wyłączony (SysVinit).${RESET}"
+        echo -e "${YELLOW}Autostart disabled (SysVinit).${RESET}"
       fi
     else
-      read -p "Autostart jest WYŁĄCZONY. Włączyć? (y/n): " ans
+      read -p "Autostart is DISABLED. Enable? (y/n): " ans
       if [ "$ans" = "y" ] || [ "$ans" = "Y" ]; then
         sudo update-rc.d "${SERVICE_NAME}" defaults
         sudo service "${SERVICE_NAME}" start 2>/dev/null || true
-        echo -e "${GREEN}Autostart włączony (SysVinit).${RESET}"
+        echo -e "${GREEN}Autostart enabled (SysVinit).${RESET}"
       fi
     fi
   fi
 }
 tail_logs() {
-  echo -e "${MAGENTA}Podgląd logów (Ctrl+C aby wyjść):${RESET}"
+  echo -e "${MAGENTA}Log tail (Ctrl+C to exit):${RESET}"
   touch "$HISTORY_LOG" "$LOG_FILE" 2>/dev/null || true
   tail -f "$HISTORY_LOG" "$LOG_FILE"
 }
 reindex_history() {
-  echo -e "${YELLOW}Ponowne indeksowanie z historii...${RESET}"
+  echo -e "${YELLOW}Reindexing from history...${RESET}"
   VENV_PY="$(venv_python)"
   if [ -f "${AUTO_DIR}/indexer_client.py" ]; then
     cd "${AUTO_DIR}"
-    "$VENV_PY" indexer_client.py --reindex-from-history || echo " - indeksowanie zakończone (sprawdź logi)"
+    "$VENV_PY" indexer_client.py --reindex-from-history || echo " - reindex finished (check logs)"
   else
-    echo -e "${RED}Brak pliku indexer_client.py${RESET}"
+    echo -e "${RED}indexer_client.py not found${RESET}"
   fi
 }
 main_menu() {
   while true; do
     echo
-    echo -e "${BOLD}${CYAN}== Menu MBC20 Daemon (${APP_BASENAME}) ==${RESET}"
-    echo -e "${YELLOW}1) Zainstaluj / odśwież daemona${RESET}"
-    echo -e "${YELLOW}2) Dodaj profil tokena${RESET}"
-    echo -e "${YELLOW}3) Edytuj profil tokena${RESET}"
-    echo -e "${YELLOW}4) Usuń profil tokena${RESET}"
-    echo -e "${YELLOW}5) Wybierz aktywny profil${RESET}"
-    echo -e "${YELLOW}6) Podgląd logów daemona${RESET}"
-    echo -e "${YELLOW}7) Edytuj klucze API (.env)${RESET}"
-    echo -e "${YELLOW}8) Włącz / wyłącz autostart${RESET}"
-    echo -e "${YELLOW}9) Ponownie indeksuj historię${RESET}"
-    echo -e "${YELLOW}10) Wyjdź${RESET}"
+    echo -e "${BOLD}${CYAN}== MBC20 Daemon Menu (${APP_BASENAME}) ==${RESET}"
+    echo -e "${YELLOW}1) Install / refresh daemon${RESET}"
+    echo -e "${YELLOW}2) Add token profile${RESET}"
+    echo -e "${YELLOW}3) Edit token profile${RESET}"
+    echo -e "${YELLOW}4) Delete token profile${RESET}"
+    echo -e "${YELLOW}5) Select active profile${RESET}"
+    echo -e "${YELLOW}6) View daemon logs${RESET}"
+    echo -e "${YELLOW}7) Edit .env (API keys)${RESET}"
+    echo -e "${YELLOW}8) Enable / disable autostart${RESET}"
+    echo -e "${YELLOW}9) Reindex from history${RESET}"
+    echo -e "${YELLOW}10) Exit${RESET}"
     echo
     if [ "$USE_SYSTEMD" -eq 1 ]; then
       STATUS=$(systemctl is-active "${SERVICE_NAME}.service" 2>/dev/null || echo "inactive")
       if [ "$STATUS" = "active" ]; then
-        echo -e " Daemon: ${GREEN}DZIAŁA${RESET} | ${SERVICE_NAME} (systemd)"
+        echo -e " Daemon: ${GREEN}RUNNING${RESET} | ${SERVICE_NAME} (systemd)"
       else
-        echo -e " Daemon: ${RED}WYŁĄCZONY${RESET} | ${SERVICE_NAME} (systemd)"
+        echo -e " Daemon: ${RED}STOPPED${RESET} | ${SERVICE_NAME} (systemd)"
       fi
     else
       if [ -f "${PIDFILE}" ] && kill -0 "$(cat "${PIDFILE}" 2>/dev/null)" 2>/dev/null; then
-        echo -e " Daemon: ${GREEN}DZIAŁA${RESET} | ${SERVICE_NAME} (SysVinit)"
+        echo -e " Daemon: ${GREEN}RUNNING${RESET} | ${SERVICE_NAME} (SysVinit)"
       else
-        echo -e " Daemon: ${RED}WYŁĄCZONY${RESET} | ${SERVICE_NAME} (SysVinit)"
+        echo -e " Daemon: ${RED}STOPPED${RESET} | ${SERVICE_NAME} (SysVinit)"
       fi
     fi
     echo
-    read -p "Wybierz opcję: " choice
+    read -p "Choose option: " choice
     case "$choice" in
       1) install_headless ;;
       2) add_profile ;;
