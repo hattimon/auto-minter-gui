@@ -2,7 +2,7 @@
 # rpdaemon.sh - Moltbook MBC20 headless daemon manager (EN)
 # Install/update headless daemon: apt, venv, psutil, no PyQt6,
 # fix profiles.json, fix start_daemon.sh, multi-folder,
-# patch mbc20_auto_daemon.py (lockfile + load_dotenv(".env"))
+# patch mbc20_auto_daemon.py (lockfile + load_dotenv(".env") + extra_comment)
 
 set -e
 RED="\\033[31m"; GREEN="\\033[32m"; YELLOW="\\033[33m"
@@ -16,7 +16,6 @@ LOG_FILE="${APP_DIR}/daemon.log"
 AUTO_DIR="${APP_DIR}/auto-minter-gui"
 ENV_FILE="${AUTO_DIR}/.env"
 PROFILES_JSON="${AUTO_DIR}/mbc20_profiles.json"
-SETTINGS_JSON="${AUTO_DIR}/mbc20_daemon_settings.json}"
 SETTINGS_JSON="${AUTO_DIR}/mbc20_daemon_settings.json"
 HISTORY_LOG="${AUTO_DIR}/mbc20_history.log"
 
@@ -88,15 +87,14 @@ patch_daemon_script() {
     echo "  - skip daemon patch: no ${script}"
     return 0
   fi
-  echo "  - patch mbc20_auto_daemon.py (configure_moltbook_api + main)..."
+  echo "  - patch mbc20_auto_daemon.py (configure_moltbook_api + extra_comment + main)..."
   python3 - "$script" <<'PYEOF'
-import sys,re
+import sys, re, textwrap
 
 path = sys.argv[1]
 text = open(path, encoding="utf-8").read()
 
 # 1) remove ALL old configure_moltbook_api() definitions
-
 text, n_del = re.subn(
     r'^def configure_moltbook_api\(\):[^\n]*\n(?:^[ \t]+.*\n)*',
     '',
@@ -128,16 +126,47 @@ else:
     text = new_conf_block + '\n\n' + text
     print("    Inserted fresh configure_moltbook_api() at top of file (no load_dotenv import match).")
 
-# 2) cut EVERYTHING from first def main( to end of file, then append our main()
+# 2) Force get_post_description() to use extra_comment
+pattern_desc = r'^def get_post_description\([^\n]*\n(?:^[ \t]+.*\n)*'
+replacement_desc = '''
+def get_post_description(profile: dict) -> str:
+    # use extra_comment from profile created/edited by rpdaemon.sh
+    return profile.get("extra_comment", "")
+'''.lstrip('\n')
+new_text2, n_desc = re.subn(pattern_desc, replacement_desc, text, flags=re.MULTILINE)
+if n_desc:
+    print("    Replaced existing get_post_description() to use extra_comment.")
+    text = new_text2
+else:
+    # if not present, just append a new one (should not happen on clean repo)
+    text += '\n\n' + replacement_desc
+    print("    Added get_post_description() using extra_comment (no previous definition).")
 
+# 3) Ensure content builder uses description before JSON + mbc20.xyz
+pattern_content = r'''
+content\s*=\s*f?["']\{\\"?p\\"?.*?mbc20\.xyz["']  # generic fallback, normally matched already
+'''
+# But w surowym pliku mamy juz poprawna wersje:
+#   content = f"{inscription_str}\n\nmbc20.xyz"
+#   if description: content = f"{description.strip()}\n\n{content}"
+# więc nic tu nie musimy zmieniać, wystarczy poprawny get_post_description.
+
+# 4) cut EVERYTHING from first def main( to end of file, then append our main()
 main_cut_pattern = r'^def main\([^\n]*\n(?:.|\n)*$'
 text, n_cut = re.subn(main_cut_pattern, '', text, flags=re.MULTILINE)
 if n_cut:
     print("    Removed old main() block and anything after it.")
 else:
-    print("    (Warning: did not find existing main() to cut; will append new main())")
+    print("    (Warning: did not find existing main() to cut; will append new main()).")
 
 new_main_block = '''
+def is_another_daemon_running() -> bool:
+    """
+    Always returns False – we trust systemd/lockfile, no hard process scan.
+    """
+    return False
+
+
 def main():
     settings = load_daemon_settings()
     logger.info("DEBUG: loaded settings = %r", settings)
