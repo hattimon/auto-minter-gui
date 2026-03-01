@@ -98,7 +98,7 @@ Repeat for `Daemon3`, `Daemon4`, etc.
 
 ```bash
 cd ~/Daemon1
-./mbc20_daemon_en.sh
+sudo ./mbc20_daemon_en.sh
 ```
 
 ```text
@@ -271,7 +271,7 @@ Analogicznie dla `Daemon3`, `Daemon4`, itd.
 
 ```bash
 cd ~/Daemon1
-./mbc20_daemon.sh
+sudo ./mbc20_daemon.sh
 ```
 
 ```text
