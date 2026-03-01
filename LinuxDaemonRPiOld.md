@@ -103,18 +103,18 @@ cd ~/Daemon1
 
 ```text
 == MBC20 Daemon menu (Daemon1) ==
-1) Zainstaluj / odswiez daemon
-2) Dodaj profil tokena
-3) Edytuj profil tokena
-4) Usun profil tokena
-5) Wybierz aktywny profil
-6) Podglad logow daemona
-7) Edytuj .env (API keys)
-8) Wlacz / wylacz autostart
-9) Reindeksuj z historii
-10) Wyjscie
+1) Install / refresh daemon
+2) Add token profile
+3) Edit token profile
+4) Delete token profile
+5) Select active profile
+6) View daemon logs
+7) Edit .env (API keys)
+8) Enable / disable autostart
+9) Reindex from history
+10) Exit
 
-  Daemon: AKTYWNY | mbc20-daemon-Daemon1 (systemd|SysVinit)
+  Daemon: ACTIVE | mbc20-daemon-Daemon1 (systemd|SysVinit)
 ```
 
 - `1` – install/refresh daemon (code, venv, service)
