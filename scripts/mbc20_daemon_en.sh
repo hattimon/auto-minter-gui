@@ -32,8 +32,7 @@ fi
 venv_python() {
   local venv_bin="${AUTO_DIR}/.venv/bin"
   local py
-  py=$(find "${venv_bin}" -maxdepth 1 -name "python3.*" \
-       ! -name "*config*" ! -name "*-*\" 2>/dev/null | sort -V | tail -1)
+  py=$(find "${venv_bin}" -maxdepth 1 -name "python3.*" ! -name "*config*" ! -name "*-*" 2>/dev/null | sort -V | tail -1)
   [ -z "$py" ] && py="${venv_bin}/python3"
   echo "$py"
 }
