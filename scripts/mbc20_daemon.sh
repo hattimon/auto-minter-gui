@@ -314,14 +314,17 @@ JSONEOF
     echo "  - settings.json utworzony (profil: ${FIRST_PROFILE})"
   fi
 
-  # start_daemon.sh – PID = python child (dziala i z systemd, i z init.d)
+  # start_daemon.sh – PID = python child (dziala i z systemd, i z init.d) + PIDFILE jako APP_USER
   cat > "${APP_DIR}/start_daemon.sh" << EOF
 #!/bin/bash
 PIDFILE="${PIDFILE}"
+APP_USER="${APP_USER}"
 cd "${AUTO_DIR}"
 "${VENV_PY}" mbc20_auto_daemon.py >> "${LOG_FILE}" 2>&1 &
 PYTHON_PID=\$!
 echo "\$PYTHON_PID" > "\$PIDFILE"
+chown "\$APP_USER":"\$APP_USER" "\$PIDFILE" 2>/dev/null || true
+chmod 644 "\$PIDFILE" 2>/dev/null || true
 wait "\$PYTHON_PID"
 rm -f "\$PIDFILE"
 EOF
@@ -568,6 +571,7 @@ edit_env() {
 
 toggle_autostart() {
   if [ "$USE_SYSTEMD" -eq 1 ]; then
+    # systemd
     local enabled
     enabled=$(systemctl is-enabled "${SERVICE_NAME}.service" 2>/dev/null || echo "disabled")
     if [ "$enabled" = "enabled" ]; then
@@ -586,8 +590,25 @@ toggle_autostart() {
       fi
     fi
   else
-    echo "SysVinit: autostart jest przez update-rc.d (${SERVICE_NAME} defaults)."
-    echo "Jest juz skonfigurowany (install_headless tak ustawil)."
+    # SysVinit (MX, stary Debian)
+    echo "SysVinit: sprawdzam autostart..."
+    if ls /etc/rc*.d/*"${SERVICE_NAME}"* >/dev/null 2>&1; then
+      # wlaczony
+      read -p "Autostart WLACZONY. Wylaczyc? (y/n): " ans
+      if [ "$ans" = "y" ] || [ "$ans" = "Y" ]; then
+        sudo update-rc.d -f "${SERVICE_NAME}" remove
+        sudo service "${SERVICE_NAME}" stop 2>/dev/null || true
+        echo -e "${YELLOW}Autostart wylaczony (SysVinit).${RESET}"
+      fi
+    else
+      # wylaczony
+      read -p "Autostart WYLACZONY. Wlaczyc? (y/n): " ans
+      if [ "$ans" = "y" ] || [ "$ans" = "Y" ]; then
+        sudo update-rc.d "${SERVICE_NAME}" defaults
+        sudo service "${SERVICE_NAME}" start 2>/dev/null || true
+        echo -e "${GREEN}Autostart wlaczony (SysVinit).${RESET}"
+      fi
+    fi
   fi
 }
 
@@ -607,6 +628,7 @@ reindex_history() {
     echo -e "${RED}Brak indexer_client.py${RESET}"
   fi
 }
+
 main_menu() {
   while true; do
     echo
