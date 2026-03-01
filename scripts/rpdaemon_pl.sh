@@ -1,7 +1,7 @@
 #!/bin/bash
 # rpdaemon_pl.sh - Moltbook MBC20 headless daemon manager (PL wrapper)
-# Uwaga: logika i patchowanie sa w rpdaemon.sh (EN). Ten skrypt
-# tylko podmienia teksty menu i prompty na polskie (bez ogonkow).
+# Uwaga: logika i patchowanie sa w tym skrypcie (jak w EN),
+# teksty menu i prompty sa po polsku (bez ogonkow).
 
 set -e
 RED="\\033[31m"; GREEN="\\033[32m"; YELLOW="\\033[33m"
@@ -17,8 +17,6 @@ ENV_FILE="${AUTO_DIR}/.env"
 PROFILES_JSON="${AUTO_DIR}/mbc20_profiles.json"
 SETTINGS_JSON="${AUTO_DIR}/mbc20_daemon_settings.json"
 HISTORY_LOG="${AUTO_DIR}/mbc20_history.log"
-
-# Funkcje pomocnicze z EN (skopiowane 1:1, tylko komunikaty po PL)
 
 venv_python() {
   local venv_bin="${AUTO_DIR}/.venv/bin"
@@ -83,19 +81,19 @@ set_kv() {
 }
 
 patch_daemon_script() {
-  # Uwaga: patch identyczny jak w rpdaemon.sh (EN), nie tlumaczymy
   local script="${AUTO_DIR}/mbc20_auto_daemon.py"
   if [ ! -f "$script" ]; then
     echo "  - pomijam patch daemona: brak ${script}"
     return 0
   fi
-  echo "  - patch mbc20_auto_daemon.py (configure_moltbook_api + main)..."
+  echo "  - patch mbc20_auto_daemon.py (configure_moltbook_api + extra_comment + main)..."
   python3 - "$script" <<'PYEOF'
-import sys,re
+import sys, re, textwrap
 
 path = sys.argv[1]
 text = open(path, encoding="utf-8").read()
 
+# 1) usun wszystkie stare configure_moltbook_api()
 text, n_del = re.subn(
     r'^def configure_moltbook_api\(\):[^\n]*\n(?:^[ \t]+.*\n)*',
     '',
@@ -103,7 +101,7 @@ text, n_del = re.subn(
     flags=re.MULTILINE
 )
 if n_del:
-    print(f"    Removed {n_del} old configure_moltbook_api() definitions.")
+    print(f"    Usunieto {n_del} starych definicji configure_moltbook_api().")
 
 new_conf_block = '''
 # ---------- Moltbook / API ----------
@@ -121,20 +119,43 @@ def configure_moltbook_api():
 insert_pat = r'(from dotenv import load_dotenv[^\n]*\n)'
 new_text, n_ins = re.subn(insert_pat, r'\1\n' + new_conf_block, text, count=1)
 if n_ins:
-    print("    Inserted fresh configure_moltbook_api() after load_dotenv import.")
+    print("    Wstawiono nowy configure_moltbook_api() za importem load_dotenv.")
     text = new_text
 else:
     text = new_conf_block + '\n\n' + text
-    print("    Inserted fresh configure_moltbook_api() at top of file (no load_dotenv import match).")
+    print("    Wstawiono configure_moltbook_api() na poczatku pliku (brak dopasowania importu).")
 
+# 2) get_post_description ma korzystac z extra_comment
+pattern_desc = r'^def get_post_description\([^\n]*\n(?:^[ \t]+.*\n)*'
+replacement_desc = '''
+def get_post_description(profile: dict) -> str:
+    # uzywa extra_comment z profilu tworzonego przez rpdaemon
+    return profile.get("extra_comment", "")
+'''.lstrip('\n')
+new_text2, n_desc = re.subn(pattern_desc, replacement_desc, text, flags=re.MULTILINE)
+if n_desc:
+    print("    Podmieniono get_post_description() aby uzywal extra_comment.")
+    text = new_text2
+else:
+    text += '\n\n' + replacement_desc
+    print("    Dodano get_post_description() uzywajacy extra_comment (brak poprzedniej definicji).")
+
+# 3) petla main() – jak w EN (bez twardego sprawdzania lockfile)
 main_cut_pattern = r'^def main\([^\n]*\n(?:.|\n)*$'
 text, n_cut = re.subn(main_cut_pattern, '', text, flags=re.MULTILINE)
 if n_cut:
-    print("    Removed old main() block and anything after it.")
+    print("    Usunieto stary blok main().")
 else:
-    print("    (Warning: did not find existing main() to cut; will append new main())")
+    print("    (Uwaga: nie znaleziono main(); dodajemy nowy).")
 
 new_main_block = '''
+def is_another_daemon_running() -> bool:
+    """
+    Zawsze zwraca False – polegamy na systemd/lockfile, bez skanowania procesow.
+    """
+    return False
+
+
 def main():
     settings = load_daemon_settings()
     logger.info("DEBUG: loaded settings = %r", settings)
@@ -145,7 +166,7 @@ def main():
 
     gui_pid = parse_gui_pid_from_argv()
 
-    # lockfile does not block start – systemd ensures at most one instance
+    # lockfile nie blokuje startu – systemd zapewnia pojedyncza instancje
     if is_another_daemon_running():
         return
 
@@ -235,7 +256,7 @@ EOF
       fi
     done
   else
-    echo "MOLTBOOK_API_KEY jest juz ustawiony (pokazywany jako ****)."
+    echo "MOLTBOOK_API_KEY jest juz ustawiony (****)."
     read -p "MOLTBOOK_API_KEY (puste = zachowaj): " NEW_MOLT
     set_kv "MOLTBOOK_API_KEY" "$NEW_MOLT"
   fi
