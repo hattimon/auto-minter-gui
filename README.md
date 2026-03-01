@@ -82,6 +82,7 @@ See full installation and usage instructions in **[`deamon.md`](deamon.md)**.
 -   requests  
 -   python-dotenv  
 -   PyQt6
+-   psutil
 
 Install them via:
 
