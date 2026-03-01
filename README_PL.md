@@ -5,7 +5,7 @@
 ## Pobierz v0.1.7
 
 [![Windows EXE](https://img.shields.io/badge/Windows-EXE-blue)](https://github.com/hattimon/auto-minter-gui/releases/tag/v0.1.7)
-[![Linux-DEB](https://img.shields.io/badge/Linux-DEB-green)](daemonRPi.md) 
+[![Linux-DEB](https://img.shields.io/badge/Linux-DEB-green)](LinuxDaemonRPiOld.md) 
 [![Raspberry%20Pi](https://img.shields.io/badge/Raspberry%20Pi-ARM%20DEB-red?logo=raspberrypi&logoColor=white)](daemonRPi.md) 
 
 > Najnowsza wersja: **v0.1.7** – daemon MBC20 w tle, współdzielone ustawienia i logi, automatyczne indeksowanie oraz opcjonalny instalator autostartu dla Windows
