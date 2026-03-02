@@ -39,6 +39,10 @@ target application folder.
     chmod +x rpdaemon.sh
     sudo ./rpdaemon.sh
 
+### ✅ Run the script with a single command
+
+    cd /home/pi/Daemon1 && sudo ./rpdaemon_pl.sh
+
 ------------------------------------------------------------------------
 
 ## 🔁 Second Instance (Daemon2)
@@ -134,6 +138,10 @@ docelowego katalogu aplikacji.
 ### 4️⃣ Instalacja
 
     sudo ./rpdaemon_pl.sh
+
+### ✅ Uruchom skrypt jednym poleceniem
+
+    cd /home/pi/Daemon1 && sudo ./rpdaemon_pl.sh
 
 ------------------------------------------------------------------------
 
