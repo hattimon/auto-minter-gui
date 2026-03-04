@@ -41,7 +41,7 @@ target application folder.
 
 ### ✅ Run the script with a single command
 
-    cd /home/pi/Daemon1 && sudo ./rpdaemon_pl.sh
+    cd /home/pi/Daemon1 && sudo ./rpdaemon.sh
 
 ------------------------------------------------------------------------
 
