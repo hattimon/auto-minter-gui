@@ -267,7 +267,7 @@ Po nagłym wyłączeniu:
 
 ---
 
-## ⚡ Quick Summary
+## ⚡ Szybkie podsumowanie (cała instalacja w skrócie)
 
 Umieść `install-daemon.ps1` w katalogu projektu.  
 
